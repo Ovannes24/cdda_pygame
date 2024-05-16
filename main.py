@@ -261,7 +261,7 @@ class Mob(Block):
         self.screen.blit(self.surf, self.rect)
         # self.surf.fill(self.c)
 
-        self.hp_bar.rect.midbottom = self.rect.midtop
+        self.hp_bar.rect.bottomleft = self.rect.topleft
         self.hp_bar.render()
 
         # self.screen.blit(self.left_item.surf, self.left_item.rect)
