@@ -254,6 +254,7 @@ class Mob(Block):
         self.mouse_pos = self.rect.center
 
         self.hp_bar = HPBar(screen, screen_rect, hp=100)
+        self.isAlive = True
 
         # self.left_item = Block(screen, screen_rect, x=0, y=0, texture_file='tiles/gun.png')
         # self.left_item_surf0 = self.left_item.surf
@@ -292,38 +293,47 @@ class Mob(Block):
         # self.right_item.rect.center = (x-10,y)
 
     def mob_move(self):
-        self.x, self.y = self.rect.topleft
-        self.velX = 0
-        self.velY = 0
-        if np.random.choice([True, False]):
-            self.velX = -self.speed
-        if np.random.choice([True, False]):
-            self.velX = self.speed
-        if np.random.choice([True, False]):
-            self.velY = -self.speed
-        if np.random.choice([True, False]):
-            self.velY = self.speed
-        if not self.x + self.velX > WIDTH or not self.x + self.velX < WIDTH:
-            self.x += self.velX
-        if not self.y + self.velY > HEIGHT or not self.y + self.velY < HEIGHT:
-            self.y += self.velY
+        if self.isAlive:
+            self.x, self.y = self.rect.topleft
+            self.velX = 0
+            self.velY = 0
+            if np.random.choice([True, False]):
+                self.velX = -self.speed
+            if np.random.choice([True, False]):
+                self.velX = self.speed
+            if np.random.choice([True, False]):
+                self.velY = -self.speed
+            if np.random.choice([True, False]):
+                self.velY = self.speed
+            if not self.x + self.velX > WIDTH or not self.x + self.velX < WIDTH:
+                self.x += self.velX
+            if not self.y + self.velY > HEIGHT or not self.y + self.velY < HEIGHT:
+                self.y += self.velY
 
-        self.rect.topleft = (self.x, self.y)
+            self.rect.topleft = (self.x, self.y)
 
-        self.relX = self.old_x - self.x
-        self.relY = self.old_y - self.y
+            self.relX = self.old_x - self.x
+            self.relY = self.old_y - self.y
 
-        self.old_x = self.x
-        self.old_y = self.y
+            self.old_x = self.x
+            self.old_y = self.y
+
         
+    def check_is_alive_mob(self):
+        if self.hp_bar.hp <= 0 and self.isAlive:
+            self.isAlive = False
+            print('Died')
+            self.surf = pygame.transform.rotate(self.surf, -90)
+            # self.rect = self.surf.get_rect()
     
     def event_handler(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            self.hp_bar.hit_hp(5)
+        if self.isAlive:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.hp_bar.hit_hp(22)
             
-
             
     def render(self):
+        self.check_is_alive_mob()
         self.draw()
         self.mob_move()
 
