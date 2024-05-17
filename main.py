@@ -563,9 +563,9 @@ class Camera:
             if event.key == pygame.K_RIGHT:
                 self.rect.centerx +=5
             if event.key == pygame.K_UP:
-                self.rect.centery +=5
-            if event.key == pygame.K_DOWN:
                 self.rect.centery -=5
+            if event.key == pygame.K_DOWN:
+                self.rect.centery +=5
 
 
         self.player.event_handler(event)
