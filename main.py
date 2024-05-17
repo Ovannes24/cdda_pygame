@@ -234,7 +234,7 @@ class Mob(Block):
     def __init__(self, screen, screen_rect, x=0, y=0, w=CELL_SIZE, h=CELL_SIZE, c=BLACK_GREEN, **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
         
-        self.speed = 1
+        self.speed = 3
         self.hp = 100
         
         self.velX = 0
@@ -600,9 +600,9 @@ class Camera:
         # self.rect.topleft = pygame.Vector2(self.rect.topleft) + pygame.Vector2(self.player.relX, self.player.relY)
         # print(self.rect.center, self.player.rect.center, self.player.relX, self.player.relY)
 
-        self.player.render()
         for mobs in range(self.N_mobs):
             self.mob[mobs].render()
+        self.player.render()
         
         # self.draw_shadow()
 
