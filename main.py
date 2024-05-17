@@ -5,7 +5,9 @@ import numpy as np
 import math
 
 WHITE = (255, 255, 255)
+WHITE_GRAY = (192, 192, 192)
 GRAY = (128, 128, 128)
+BLACK_GRAY = (64, 64, 64)
 BLACK = (0, 0, 0)
 
 RED = (255, 0, 0)
@@ -23,8 +25,10 @@ BLACK_BLUE = (0, 0, 64)
 
 
 
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1400, 800
 FPS = 60
+
+FONT = None
 
 CELL_SIZE = 32
 
@@ -323,7 +327,6 @@ class Mob(Block):
         self.draw()
         self.mob_move()
 
-
 class Player(Block):
     def __init__(self, screen, screen_rect, x=0, y=0, w=CELL_SIZE, h=CELL_SIZE, c=GREEN, **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
@@ -612,8 +615,8 @@ class Map:
         self.surf.set_alpha(255)
         self.surf.fill(self.c)
 
-        self.btn = Button(self.screen, self.screen_rect, x=0, y=0, w=25, h=25)
-        self.btn.rect.bottomright = self.rect.topleft
+        self.btn = Button(self.screen, self.screen_rect, x=self.x, y=self.y, w=self.w, h=25)
+        # self.btn.rect.bottomright = self.rect.topleft
 
         self.camera = Camera(self.surf, self.rect, x=0, y=0, w=self.w, h=self.h, c=BLACK_GREEN)
 
@@ -624,17 +627,65 @@ class Map:
 
     def render(self):
         self.btn.render()
-        self.rect.topleft = self.btn.rect.bottomright
+        self.rect.topleft = self.btn.rect.bottomleft
         self.screen.blit(self.surf, self.rect)
         self.surf.fill(self.c)
 
         self.camera.render()
+
+class Window:
+    def __init__(self, screen, screen_rect, clock, x=100, y=100, w=200, h=200, c=GRAY) -> None:
+        self.screen = screen
+        self.screen_rect = screen_rect
+        self.clock = clock
+
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+
+        self.c = c
+
+        self.surf = pygame.Surface((self.w, self.h))
+        self.rect = self.surf.get_rect()
+        self.rect.topleft = (self.x, self.y)
+        self.surf.set_alpha(255)
+        self.surf.fill(self.c)
+
+        self.btn = Button(self.screen, self.screen_rect, x=self.x, y=self.y, w=self.w, h=25)
+        # self.btn.rect.bottomright = self.rect.topleft
+
+        self.text = 'FPS: '
+        self.font = pygame.font.Font(FONT, 36)
+        self.surf_font = self.font.render(self.text, True, WHITE)
+
+
+    def change_text(self):
+        self.text = f'FPS: {self.clock.get_fps():.3f}'
+        self.font = pygame.font.Font(FONT, 36)
+        self.surf_font = self.font.render(self.text, True, WHITE)
+
+    def event_handler(self, event):
+        self.btn.event_handler(event)
+
+
+    def render(self):
+        self.btn.render()
+        self.rect.topleft = self.btn.rect.bottomleft
+        self.screen.blit(self.surf, self.rect)
+        self.surf.fill(self.c)
+
+        self.change_text()
+        self.surf.blit(self.surf_font, (0, 0))
+
 
 class Game:
     def __init__(self) -> None:
         self.width = WIDTH
         self.height = HEIGHT
         self.fps = FPS
+
+        pygame.init()
 
         self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         self.screen_rect = self.screen.get_rect()
@@ -646,17 +697,21 @@ class Game:
 
         self.running = True
 
-        self.map = Map(self.screen, self.screen_rect, x=50, y=100, w=1000, h=800, c=GRAY)
+        self.map = Map(self.screen, self.screen_rect, x=280, y=32, w=1000, h=800, c=GRAY)
+        self.stat_windows = Window(self.screen, self.screen_rect, self.clock, x=32, y=32, w=200, h=400, c=BLACK_GRAY)
 
     def event_handler(self, event):
         self.map.event_handler(event)
+        self.stat_windows.event_handler(event)
 
     def render(self):
         self.screen.fill(BLACK) 
         self.map.render()
+        self.stat_windows.render()
+        
 
     def run(self):
-        pygame.init()
+        
 
         while self.running:
             events = pygame.event.get()
