@@ -29,6 +29,7 @@ WIDTH, HEIGHT = 1400, 800
 FPS = 60
 
 FONT = None
+FONT_SIZE = 20
 
 CELL_SIZE = 32
 
@@ -370,6 +371,9 @@ class Player(Block):
         self.right_item = Block(screen, screen_rect, x=0, y=0, texture_file='tiles/knife.png')
         self.right_item_surf0 = self.right_item.surf
 
+    def get_pos(self):
+        return (self.x, self.y)
+
     def draw(self):
         self.screen.blit(self.surf, self.rect)
         # self.surf.fill(self.c)
@@ -644,10 +648,12 @@ class Map:
         self.camera.render()
 
 class Window:
-    def __init__(self, screen, screen_rect, clock, x=100, y=100, w=200, h=200, c=GRAY) -> None:
+    def __init__(self, screen, screen_rect, clock, player, x=100, y=100, w=200, h=200, c=GRAY) -> None:
         self.screen = screen
         self.screen_rect = screen_rect
+        
         self.clock = clock
+        self.player = player
 
         self.x = x
         self.y = y
@@ -669,11 +675,21 @@ class Window:
         self.font = pygame.font.Font(FONT, 36)
         self.surf_font = self.font.render(self.text, True, WHITE)
 
+        self.text1 = 'P_POS: '
+        self.font1 = pygame.font.Font(FONT, 36*2)
+        self.surf_font1 = self.font1.render(self.text1, True, WHITE)
+
 
     def change_text(self):
         self.text = f'FPS: {self.clock.get_fps():.3f}'
-        self.font = pygame.font.Font(FONT, 36)
+        self.font = pygame.font.Font(FONT, FONT_SIZE)
         self.surf_font = self.font.render(self.text, True, WHITE)
+        self.surf.blit(self.surf_font, (0, FONT_SIZE*0))
+
+        self.text1 = f'P_POS: {self.player.get_pos()}'
+        self.font1 = pygame.font.Font(FONT, FONT_SIZE)
+        self.surf_font1 = self.font1.render(self.text1, True, WHITE)
+        self.surf.blit(self.surf_font1, (0, FONT_SIZE*1))
 
     def event_handler(self, event):
         self.btn.event_handler(event)
@@ -686,7 +702,7 @@ class Window:
         self.surf.fill(self.c)
 
         self.change_text()
-        self.surf.blit(self.surf_font, (0, 0))
+        
 
 
 class Game:
@@ -708,7 +724,7 @@ class Game:
         self.running = True
 
         self.map = Map(self.screen, self.screen_rect, x=280, y=32, w=1000, h=800, c=GRAY)
-        self.stat_windows = Window(self.screen, self.screen_rect, self.clock, x=32, y=32, w=200, h=400, c=BLACK_GRAY)
+        self.stat_windows = Window(self.screen, self.screen_rect, self.clock, self.map.camera.player, x=32, y=32, w=200, h=400, c=BLACK_GRAY)
 
     def event_handler(self, event):
         self.map.event_handler(event)
