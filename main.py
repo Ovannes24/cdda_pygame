@@ -518,7 +518,7 @@ class Camera:
         self.player = Player(self.screen, self.screen_rect, x=0, y=0, texture_file='tiles/player.png')
         
         self.N_mobs = 10
-        self.mob = [Mob(self.surf, self.rect, x=44, y=100+mobs, texture_file='tiles/zombie.png') for mobs in range(self.N_mobs)]
+        self.mob = [Mob(self.screen, self.screen_rect, x=44, y=100+mobs, texture_file='tiles/zombie.png') for mobs in range(self.N_mobs)]
         
         self.player.rect.center = self.rect.center
         self.blocks = [
