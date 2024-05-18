@@ -127,15 +127,15 @@ class Button(Block):
     def event_handler(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
-                # print(True)
+                print(True)
                 self.clicked = True
                 self.c = GREEN
         elif event.type == pygame.MOUSEBUTTONUP:
             self.clicked = False
             self.c = RED
-            # print(False)
+            print(False)
         elif event.type == pygame.MOUSEMOTION and self.clicked:
-            # print(event.rel)
+            print(event.rel)
             self.rect.move_ip(event.rel)
 
     def render(self):
@@ -199,6 +199,8 @@ class Chunck:
                 if self.map[i][j]:
                     self.map[i][j].render()
         
+        
+
 class HPBar(Block):
     def __init__(self, screen, screen_rect,  x=0, y=0, w=CELL_SIZE, h=2, c=RED, hp=100, **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
@@ -326,7 +328,7 @@ class Mob(Block):
     def check_is_alive_mob(self):
         if self.hp_bar.hp <= 0 and self.isAlive:
             self.isAlive = False
-            # print('Died')
+            print('Died')
             self.surf = pygame.transform.rotate(self.surf, -90)
             # self.rect = self.surf.get_rect()
     
@@ -345,7 +347,7 @@ class Player(Block):
     def __init__(self, screen, screen_rect, x=0, y=0, w=CELL_SIZE, h=CELL_SIZE, c=GREEN, **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
         
-        self.speed = 3
+        self.speed = 10
         
         self.velX = 0
         self.velY = 0
@@ -407,7 +409,7 @@ class Player(Block):
         self.right_item.rect.center = (x-10,y)
 
     def player_move(self):
-        # self.x, self.y = self.rect.topleft
+        self.x, self.y = self.rect.topleft
         self.velX = 0
         self.velY = 0
         if self.left_pressed and not self.right_pressed:
@@ -423,9 +425,13 @@ class Player(Block):
         if not self.y + self.velY > HEIGHT or not self.y + self.velY < HEIGHT:
             self.y += self.velY
 
-        # self.rect.topleft = (self.x, self.y)
+        self.rect.topleft = (self.x, self.y)
 
+        self.relX = self.old_x - self.x
+        self.relY = self.old_y - self.y
 
+        self.old_x = self.x
+        self.old_y = self.y
         
 
 
@@ -462,14 +468,9 @@ class Player(Block):
             # print(pygame.Vector2(self.screen_rect.topleft) )
             
     def render(self):
-        self.item_on_hands_move()
         self.draw()
-
-        self.relX = self.x - self.old_x 
-        self.relY = self.y - self.old_y 
-        self.old_x = self.x
-        self.old_y = self.y
         self.player_move()
+        self.item_on_hands_move()
 
 class Camera:
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=200, c=BLACK_GREEN) -> None:
@@ -514,31 +515,41 @@ class Camera:
             [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
             [1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+
+            
         ])
 
-        self.map_w = len(self.map[0])
-        self.map_h = len(self.map)
+        self.map_w = len(self.map[0])//4
+        self.map_h = len(self.map)//4
         
-
-        self.mw, self.mh  = np.meshgrid(np.arange(self.map_w), np.arange(self.map_h))
-        self.mw, self.mh = self.mw*CELL_SIZE, self.mh*CELL_SIZE
-
         self.player = Player(self.surf, self.rect, x=0, y=0, texture_file='tiles/player.png')
         
         self.N_mobs = 10
         self.mob = [Mob(self.surf, self.rect, x=44, y=100+mobs, texture_file='tiles/zombie.png') for mobs in range(self.N_mobs)]
         
         self.player.rect.center = self.rect.center
-        self.blocks = [
-                [ Block(self.surf, self.rect, x=j*CELL_SIZE, y=i*CELL_SIZE, w=CELL_SIZE, h=CELL_SIZE, c=GREEN, alpha=255, texture_file='tiles/block.png' if self.map[i][j] else 'tiles/grass.png', collidable=self.map[i][j]) for j in range(self.map_w)
-                ] for i in range(self.map_h)
-            ]     
+
+        self.chuncks = [ [None for i in range(self.map_w)] for j in range(self.map_h)]
+
+        for i in range(self.map_h):
+            for j in range(self.map_w):
+                self.chuncks[i][j] = Chunck(self.surf, self.rect, x=j*CELL_SIZE*4, y=i*CELL_SIZE*4, map=self.map[i*4:i*4+4, j*4:j*4+4].tolist())
 
 
-    def collision(self, i, j):
-        self.blocks[i][j].collision(self.player.rect)
-        for mobs in range(self.N_mobs):
-            self.blocks[i][j].collision(self.mob[mobs].rect)
+    def collision(self):
+        for i in range(self.map_h):
+            for j in range(self.map_w):
+                self.chuncks[i][j].collision(self.player.rect)
+                for mobs in range(self.N_mobs):
+                    self.chuncks[i][j].collision(self.mob[mobs].rect)
+        
+        # i = int((self.player.rect.centerx/32)//3)
+        # j = int((self.player.rect.centery/32)//3)
+        # print(i, j)
+        # for k in range(-1, 1+1, 1):
+        #     for l in range(-1, 1+1, 1):
+        #         if j+k>0 and j+k<self.map_h and i+l>0 and i+l<self.map_w:
+        #             self.chuncks[j+k][i+l].collision(self.player.rect)
 
     def draw_shadow(self):
         pc = pygame.Vector2(self.player.rect.center)
@@ -576,41 +587,34 @@ class Camera:
             if event.key == pygame.K_DOWN:
                 self.rect.centery +=5
 
-        for i in range(self.map_h):
-            for j in range(self.map_w):
-                self.blocks[i][j].event_handler(event)
 
         self.player.event_handler(event)
         for mobs in range(self.N_mobs):
             self.mob[mobs].event_handler(event)
         
+        for i in range(self.map_h):
+            for j in range(self.map_w):
+                self.chuncks[i][j].event_handler(event)
+
+        
 
     def render(self):
         self.screen.blit(self.surf, self.rect)
         self.surf.fill(self.c)
-        
-        
-        # self.collision()
-        # for i in range(self.map_h):
-        #     for j in range(self.map_w):
-        #         self.blocks[i][j].render()
+        self.collision()
 
-        for i, j in np.argwhere(np.sqrt((self.mw - self.player.rect.topleft[0])**2 + (self.mh - self.player.rect.topleft[1])**2) < CELL_SIZE*10):
-            self.collision(i, j)
-            self.blocks[i][j].render()
-
-        
-        self.rect.topleft = pygame.Vector2(self.rect.topleft) - pygame.Vector2((self.player.relX, self.player.relY)) 
-        self.player.rect.topleft = pygame.Vector2(self.player.rect.topleft) + pygame.Vector2((self.player.relX, self.player.relY)) 
-        
-        print(self.player.velX, self.player.velY, self.player.rect.topleft)
+        for i in range(self.map_h):
+            for j in range(self.map_w):
+                self.chuncks[i][j].render()
+                pygame.draw.rect(self.surf, GREEN, self.chuncks[i][j].rect, 1)
+                
+        # self.rect.topleft = pygame.Vector2(self.rect.topleft) + pygame.Vector2(self.player.relX, self.player.relY)
+        # print(self.rect.center, self.player.rect.center, self.player.relX, self.player.relY)
 
         for mobs in range(self.N_mobs):
             self.mob[mobs].render()
         self.player.render()
         
-            
-
         # self.draw_shadow()
 
 class Map:
