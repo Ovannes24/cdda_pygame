@@ -25,14 +25,30 @@ W, H = 400, 400
 CELL_SIZE = 32
 
 class S:
-    def __init__(self, screen1, x=0,y=0,w=CELL_SIZE,h=CELL_SIZE,c=BLACK) -> None:
+    def __init__(self, screen1, screen1_rect, x=0,y=0,w=CELL_SIZE,h=CELL_SIZE,c=BLACK) -> None:
         self.screen1 = screen1
+        self.screen1_rect = screen1_rect
         
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
+        self.x_origin = x
+        self.y_origin = y
+        self.w_origin = w
+        self.h_origin = h
         self.c = c
+        
+
+        self.x = self.x_origin
+        self.y = self.y_origin
+        self.w = self.w_origin
+        self.h = self.h_origin
+
+        self.speed_origin = 10
+        self.speed = self.speed_origin 
+
+        self.last_char = ''
+        self.moving_up = False
+        self.moving_down = False
+        self.moving_left = False
+        self.moving_right = False
         
         self.surf_origin = pg.Surface((w,h))
         self.surf_origin.fill(self.c)
@@ -42,123 +58,122 @@ class S:
         self.mouse_pos = (0, 0)
 
         self.scale_value = self.scale_value_origin
+        self.scale_value_smooth = 0
+
         self.surf = pg.transform.rotozoom(self.surf_origin, 0, self.scale_value)
         
         self.rect = self.surf.get_rect()
-        self.rect.topleft = (self.x, self.y)
+        self.rect.center = (self.x, self.y)
 
     def rescale(self):
+        print(self.scale_value, 1/self.scale_value)
         self.scale_value *= 1/self.scale_value
-        self.surf = pg.transform.rotozoom(self.surf_origin, 0, self.scale_value)
-        
-        self.rect = self.surf.get_rect()
-        self.rect.topleft = (self.x, self.y)
+        self.scale(self.scale_value)
 
     def scale(self, sv):
         self.scale_value *= sv
 
+        self.speed = self.speed_origin * self.scale_value
 
-        self.x = (self.x - self.mouse_pos[0]) * self.scale_value + self.mouse_pos[0]
-        self.y = (self.y - self.mouse_pos[1]) * self.scale_value + self.mouse_pos[1]
-
-        self.w = self.w * self.scale_value 
-        self.h = self.h * self.scale_value 
-
+        self.w = self.w_origin * self.scale_value 
+        self.h = self.h_origin * self.scale_value 
 
         self.surf = pg.transform.rotozoom(self.surf_origin, 0, self.scale_value)
-        
+
+        self.x_origin = self.mouse_pos[0] - (self.mouse_pos[0] - self.x_origin) * self.scale_value
+        self.y_origin = self.mouse_pos[1] - (self.mouse_pos[1] - self.y_origin) * self.scale_value
+        self.x = self.x_origin
+        self.y = self.y_origin
+
         self.rect = self.surf.get_rect()
-        # self.move(self.x, self.y)
-        self.set_xy(self.x, self.y)
+        self.rect.center = (self.x, self.y)
+        
+        print(self.scale_value, (self.x, self.y), (self.w, self.h))
 
     def set_xy(self, x, y):
-        self.rect.topleft = (self.x, self.y)
+        self.rect.center = (self.x, self.y)
 
     def move(self, x, y):
-        self.x += x
-        self.y += y
+        self.x_origin += x*self.scale_value
+        self.y_origin += y*self.scale_value
+        self.x = self.x_origin
+        self.y = self.y_origin
 
-        self.rect.topleft = (self.x, self.y)
+        self.rect.center = (self.x, self.y)
 
     def event_handler(self, event):
         if event.type == pg.KEYDOWN:
-            print(event)
-            s = s2
-            if event.key == pg.K_w:
-                s.rect.centery -= 10
-            if event.key == pg.K_s:
-                s.rect.centery += 10
-            if event.key == pg.K_a:
-                s.rect.centerx -= 10
-            if event.key == pg.K_d:
-                s.rect.centerx += 10
-
-            s = s1
-            if event.key == pg.K_UP:
-                s.move(0, -10)
-            if event.key == pg.K_DOWN:
-                s.move(0, +10)
-            if event.key == pg.K_LEFT:
-                s.move(-10, 0)
-            if event.key == pg.K_RIGHT:
-                s.move(+10, 0)
-
-            if event.key == pg.K_z:
-                s1.surf = pg.transform.rotozoom(s1.surf, 0, 2)
-                s2.screen1 = s1.surf
-                # s1.rect = s1.surf.get_rect()
-            if event.key == pg.K_x:
-                s1.surf = pg.transform.rotozoom(s1.surf, 0, 1/2)
-                s2.screen1 = s1.surf
-                # s1.rect = s1.surf.get_rect()
-
+            # print(event)
+            if event.key == pg.K_r:
+                s1.rescale()
             if event.key == pg.K_c:
                 s1.surf = pg.transform.flip(s1.surf, True, False)
-                s2.screen1 = s1.surf
+
+                
+            if event.key == pg.K_w:
+                self.last_char = event.unicode
+                self.moving_up = True
+            if event.key == pg.K_s:
+                self.last_char = event.unicode
+                self.moving_down = True
+            if event.key == pg.K_a:
+                self.last_char = event.unicode
+                self.moving_left = True
+            if event.key == pg.K_d:
+                self.last_char = event.unicode
+                self.moving_right = True
+
+        if event.type == pg.KEYUP:
+            if self.moving_up and event.unicode == 'w':
+                self.moving_up = False
+            if self.moving_down and event.unicode == 's':
+                self.moving_down = False
+            if self.moving_left and event.unicode == 'a':
+                self.moving_left = False
+            if self.moving_right and event.unicode == 'd':
+                self.moving_right = False
+    
         elif event.type == pg.MOUSEMOTION:
-            print(event)
             self.mouse_pos = event.pos
         elif event.type == pg.MOUSEWHEEL:
-            print(event)
             if event.y <= 0:
                 s1.scale(0.9)
-                s2.scale(0.9)
-                s2.screen1 = s1.surf
             else:
                 s1.scale(1.1)
-                s2.scale(1.1)
-                s2.screen1 = s1.surf
 
     def render(self):
+        if any([self.moving_up, self.moving_down, self.moving_left, self.moving_right]):
+            if self.moving_up:
+                s1.move(0, -self.speed)
+            if self.moving_down:
+                s1.move(0, +self.speed)
+            if self.moving_left:
+                s1.move(-self.speed, 0)
+            if self.moving_right:
+                s1.move(+self.speed, 0)
         self.screen1.blit(self.surf, self.rect)
         self.surf.fill(self.c)
 
+        pg.draw.rect(self.screen1, BLACK_RED, (self.x-self.w/2+1, self.y-self.h/2+1, self.w, self.h), 3)
+        pg.draw.line(self.screen1, BLACK_RED, self.mouse_pos, self.rect.center)
 
-screen = pg.display.set_mode((W, H))
+screen = pg.display.set_mode((W, H), pg.RESIZABLE)
 screen.fill(WHITE)
 
-s1 = S(screen, 0,0,100,100,RED)
+screen_rect = screen.get_rect()
+
+s1 = S(screen,screen_rect, 70,70,100,100,RED)
 s1.render()
 
-s2 = S(s1.surf, 0,0,50,50,GREEN)
-s2.render()
 
-
- 
 while 1:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             sys.exit()
-        
-        s2.event_handler(event)
-        s1.event_handler(event)
-        
-            # s1.rect = s1.surf.get_rect()
 
-            
+        s1.event_handler(event)
 
     screen.fill(WHITE)
-    s2.render()
     s1.render()
     
  

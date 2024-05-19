@@ -103,11 +103,16 @@ class Block:
                     rect.right = self.rect.left
                 else:
                     rect.left = self.rect.right
-            else:
+            if abs(dx) < abs(dy):
                 if dy < 0:
                     rect.bottom = self.rect.top
                 else:
                     rect.top = self.rect.bottom
+            # if abs(dx) == abs(dy):
+            #     if dy < 0:
+            #         rect.bottom = self.rect.top
+            #     else:
+            #         rect.top = self.rect.bottom
 
     def event_handler(self, event):
         pass
@@ -345,6 +350,8 @@ class Player(Block):
     def __init__(self, screen, screen_rect, x=0, y=0, w=CELL_SIZE, h=CELL_SIZE, c=GREEN, **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
         
+        self.x, self.y = self.rect.topleft
+
         self.speed = 3
         
         self.velX = 0
@@ -366,6 +373,8 @@ class Player(Block):
         self.walking = False
         self.last_key = []
 
+        self.collided = False
+
         self.mouse_pos = self.rect.center
 
         self.left_item = Block(screen, screen_rect, x=0, y=0, texture_file='tiles/gun.png')
@@ -375,11 +384,14 @@ class Player(Block):
         self.right_item_surf0 = self.right_item.surf
 
     def get_pos(self):
-        return (self.x, self.y)
+        # return (self.x, self.y)
+        return self.rect.topleft
 
     def draw(self):
         self.screen.blit(self.surf, self.rect)
         # self.surf.fill(self.c)
+        pygame.draw.rect(self.screen, GREEN, (self.x, self.y, self.w, self.h), 2)
+        pygame.draw.rect(self.screen, BLACK_GREEN, self.rect, 2)
 
         pygame.draw.line(self.screen, self.c, self.left_item.rect.center, self.mouse_pos)
 
@@ -422,13 +434,13 @@ class Player(Block):
             self.x += self.velX
         if not self.y + self.velY > HEIGHT or not self.y + self.velY < HEIGHT:
             self.y += self.velY
-
-        # self.rect.topleft = (self.x, self.y)
-
-
         
-
-
+        
+        self.rect.topleft = (self.x, self.y)
+        # self.rect.topleft = (self.x, self.y)
+        # self.x, self.y = self.screen_rect.topleft
+        # self.x, self.y = self.rect.topleft
+        # self.screen_rect.topleft = self.x, self.y
 
     def event_handler(self, event):
         if event.type == pygame.KEYDOWN:
@@ -458,7 +470,7 @@ class Player(Block):
             if event.key == pygame.K_s:
                 self.down_pressed = False
         if event.type == pygame.MOUSEMOTION:
-            self.mouse_pos = pygame.Vector2(event.pos) - pygame.Vector2(game.map.rect.topleft) 
+            self.mouse_pos = pygame.Vector2(event.pos) - pygame.Vector2(game.map.rect.topleft) - pygame.Vector2(game.map.camera.rect.topleft)
             # print(pygame.Vector2(self.screen_rect.topleft) )
             
     def render(self):
@@ -469,6 +481,13 @@ class Player(Block):
         self.relY = self.y - self.old_y 
         self.old_x = self.x
         self.old_y = self.y
+
+        # self.relX = self.rect.center[0] - self.old_x
+        # self.relY = self.rect.center[1] - self.old_y
+        # self.old_x = self.rect.center[0]
+        # self.old_y = self.rect.center[1]
+
+        # self.x = int(self.x)
         self.player_move()
 
 class Camera:
@@ -490,23 +509,33 @@ class Camera:
         self.surf.fill(self.c)
 
         self.map = np.array([
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
         ])
+
+        self.map1 = self.map
 
         self.map_w = len(self.map[0])
         self.map_h = len(self.map)
@@ -515,12 +544,12 @@ class Camera:
         self.mw, self.mh  = np.meshgrid(np.arange(self.map_w), np.arange(self.map_h))
         self.mw, self.mh = self.mw*CELL_SIZE, self.mh*CELL_SIZE
 
-        self.player = Player(self.screen, self.screen_rect, x=0, y=0, texture_file='tiles/player.png')
+        self.player = Player(self.surf, self.rect, x=self.rect.centerx, y=self.rect.centery, texture_file='tiles/player.png')
         
         self.N_mobs = 10
-        self.mob = [Mob(self.screen, self.screen_rect, x=44, y=100+mobs, texture_file='tiles/zombie.png') for mobs in range(self.N_mobs)]
+        self.mob = [Mob(self.surf, self.rect, x=44, y=100+mobs, texture_file='tiles/zombie.png') for mobs in range(self.N_mobs)]
         
-        self.player.rect.center = self.rect.center
+        # self.player.rect.center = self.rect.center
         self.blocks = [
                 [ Block(self.surf, self.rect, x=j*CELL_SIZE, y=i*CELL_SIZE, w=CELL_SIZE, h=CELL_SIZE, c=GREEN, alpha=255, texture_file='tiles/block.png' if self.map[i][j] else 'tiles/grass.png', collidable=self.map[i][j]) for j in range(self.map_w)
                 ] for i in range(self.map_h)
@@ -529,6 +558,7 @@ class Camera:
 
     def collision(self, i, j):
         self.blocks[i][j].collision(self.player.rect)
+        (self.player.x, self.player.y) = pygame.Vector2(self.player.rect.topleft)
         for mobs in range(self.N_mobs):
             self.blocks[i][j].collision(self.mob[mobs].rect)
 
@@ -586,22 +616,22 @@ class Camera:
         # for i in range(self.map_h):
         #     for j in range(self.map_w):
         #         self.blocks[i][j].render()
-
-        for i, j in np.argwhere(np.sqrt((self.mw + self.rect.topleft[0] - 484)**2 + (self.mh + self.rect.topleft[1] - 384)**2) < CELL_SIZE*10):
+        self.player.x = int(self.player.x)
+        for i, j in np.argwhere(np.sqrt((self.mw - self.player.rect.topleft[0])**2 + (self.mh - self.player.rect.topleft[1])**2) < CELL_SIZE*10):
             self.collision(i, j)
             self.blocks[i][j].render()
 
         
         self.rect.topleft = pygame.Vector2(self.rect.topleft) - pygame.Vector2((self.player.relX, self.player.relY)) 
-        # self.player.rect.topleft = pygame.Vector2(self.player.rect.topleft) + pygame.Vector2((self.player.relX, self.player.relY)) 
+        self.player.rect.topleft = pygame.Vector2(self.player.rect.topleft) + pygame.Vector2((self.player.relX, self.player.relY)) 
         
-        print(self.player.velX, self.player.velY, self.player.rect.topleft)
+        print(f"""p_x, p_y = {self.player.x, self.player.y}, p_ox, p_oy = {self.player.old_x, self.player.old_y}, p_tl = {self.player.rect.topleft}, p_rel_XY = {self.player.relX, self.player.relY}
+m_tl = {self.rect.topleft},""")
 
         for mobs in range(self.N_mobs):
             self.mob[mobs].render()
         self.player.render()
-        
-            
+
 
         # self.draw_shadow()
 
@@ -697,7 +727,6 @@ class Window:
         self.surf.fill(self.c)
 
         self.change_text()
-        
 
 
 class Game:
