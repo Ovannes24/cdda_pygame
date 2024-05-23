@@ -48,10 +48,15 @@ class Block:
         self.screen = screen
         self.screen_rect = screen_rect
 
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
+        self.x_origin = x
+        self.y_origin = y
+        self.w_origin = w
+        self.h_origin = h
+
+        self.x = self.x_origin
+        self.y = self.y_origin
+        self.w = self.w_origin
+        self.h = self.h_origin
 
         self.c = c
 
@@ -59,14 +64,19 @@ class Block:
         self.texture_file = texture_file
         self.collidable = collidable
         
+        self.scale_value = 1
+
+
         if texture_file == None:
-            self.surf = pygame.Surface((self.w, self.h))
+            self.surf_origin = pygame.Surface((self.w, self.h))
+            self.surf = self.surf_origin
             self.rect = self.surf.get_rect()
             self.rect.topleft = (self.x, self.y)
             self.surf.set_alpha(alpha)
             self.surf.fill(self.c)
         else:
-            self.surf = pygame.image.load(texture_file).convert_alpha()
+            self.surf_origin = pygame.image.load(self.texture_file).convert_alpha()
+            self.surf = self.surf_origin
             self.rect = self.surf.get_rect()
             self.rect.topleft = (self.x, self.y)
             # self.surf.set_alpha(alpha)
@@ -82,13 +92,15 @@ class Block:
             self.h = 0
         
         if self.texture_file == None:
-            self.surf = pygame.Surface((self.w, self.h))
+            self.surf_origin = pygame.Surface((self.w, self.h))
+            self.surf = self.surf_origin
             self.rect = self.surf.get_rect()
             self.rect.topleft = (self.x, self.y)
             self.surf.set_alpha(self.alpha)
             self.surf.fill(self.c)
         else:
-            self.surf = pygame.image.load(self.texture_file).convert_alpha()
+            self.surf_origin = pygame.image.load(self.texture_file).convert_alpha()
+            self.surf = self.surf_origin
             self.rect = self.surf.get_rect()
             self.rect.topleft = (self.x, self.y)
             # self.surf.set_alpha(alpha)
@@ -114,12 +126,39 @@ class Block:
             #     else:
             #         rect.top = self.rect.bottom
 
+    def scale(self, sv, x0, y0):
+        self.scale_value *= sv
+
+        self.w_origin = self.w_origin * self.scale_value
+        self.h_origin = self.h_origin * self.scale_value
+
+        self.w = self.w_origin 
+        self.h = self.h_origin 
+
+        self.surf = pygame.transform.rotozoom(self.surf_origin, 0, self.scale_value)
+
+        self.x_origin = x0 - (x0 - self.x_origin) * self.scale_value
+        self.y_origin = y0 - (y0 - self.y_origin) * self.scale_value
+        self.x = self.x_origin
+        self.y = self.y_origin
+
+        self.rect = self.surf.get_rect()
+        self.rect.topleft = (self.x, self.y)
+        
+        # print(self.scale_value, (self.x, self.y), (self.w, self.h))
+
     def event_handler(self, event):
-        pass
+        if event.type == pygame.MOUSEWHEEL:
+            if event.y <= 0:
+                self.scale(0.9, self.screen_rect.centerx,self.screen_rect.centery)
+            else:
+                self.scale(1.1, self.screen_rect.centerx,self.screen_rect.centery)
 
     def render(self):
         self.screen.blit(self.surf, self.rect)
         # self.surf.fill(self.c)
+
+        pygame.draw.rect(self.screen, self.c, (self.x, self.y, self.w, self.h), 1)
 
 class Button(Block):
     def __init__(self, screen, screen_rect, x=0, y=0, w=CELL_SIZE, h=CELL_SIZE, c=RED, text='+', **kwargs) -> None:
@@ -339,7 +378,11 @@ class Mob(Block):
         if self.isAlive:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.hp_bar.hit_hp(22)
-            
+        if event.type == pygame.MOUSEWHEEL:
+            if event.y <= 0:
+                self.scale(0.9, self.screen_rect.centerx,self.screen_rect.centery)
+            else:
+                self.scale(1.1, self.screen_rect.centerx,self.screen_rect.centery)
             
     def render(self):
         self.check_is_alive_mob()
@@ -472,7 +515,12 @@ class Player(Block):
         if event.type == pygame.MOUSEMOTION:
             self.mouse_pos = pygame.Vector2(event.pos) - pygame.Vector2(game.map.rect.topleft) - pygame.Vector2(game.map.camera.rect.topleft)
             # print(pygame.Vector2(self.screen_rect.topleft) )
-            
+        if event.type == pygame.MOUSEWHEEL:
+            if event.y <= 0:
+                self.scale(0.9, self.screen_rect.centerx,self.screen_rect.centery)
+            else:
+                self.scale(1.1, self.screen_rect.centerx,self.screen_rect.centery)
+
     def render(self):
         self.item_on_hands_move()
         self.draw()
@@ -488,6 +536,7 @@ class Player(Block):
         # self.old_y = self.rect.center[1]
 
         # self.x = int(self.x)
+        print(self.scale_value)
         self.player_move()
 
 class Camera:
@@ -617,7 +666,7 @@ class Camera:
         #     for j in range(self.map_w):
         #         self.blocks[i][j].render()
         self.player.x = int(self.player.x)
-        for i, j in np.argwhere(np.sqrt((self.mw - self.player.rect.topleft[0])**2 + (self.mh - self.player.rect.topleft[1])**2) < CELL_SIZE*10):
+        for i, j in np.argwhere(np.sqrt((self.mw - self.player.rect.topleft[0])**2 + (self.mh - self.player.rect.topleft[1])**2) < CELL_SIZE*8):
             self.collision(i, j)
             self.blocks[i][j].render()
 
@@ -625,8 +674,8 @@ class Camera:
         self.rect.topleft = pygame.Vector2(self.rect.topleft) - pygame.Vector2((self.player.relX, self.player.relY)) 
         self.player.rect.topleft = pygame.Vector2(self.player.rect.topleft) + pygame.Vector2((self.player.relX, self.player.relY)) 
         
-        print(f"""p_x, p_y = {self.player.x, self.player.y}, p_ox, p_oy = {self.player.old_x, self.player.old_y}, p_tl = {self.player.rect.topleft}, p_rel_XY = {self.player.relX, self.player.relY}
-m_tl = {self.rect.topleft},""")
+        # print(f"""p_x, p_y = {self.player.x, self.player.y}, p_ox, p_oy = {self.player.old_x, self.player.old_y}, p_tl = {self.player.rect.topleft}, p_rel_XY = {self.player.relX, self.player.relY}
+        #       m_tl = {self.rect.topleft},""")
 
         for mobs in range(self.N_mobs):
             self.mob[mobs].render()
