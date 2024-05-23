@@ -64,7 +64,8 @@ class Square:
 
         self.render_color = render_color
         
-        self.surf = pg.Surface((self.w, self.h))
+        self.surf_origin = pg.Surface((self.w, self.h))
+        self.surf = self.surf_origin
         self.set_rect(self.surf)
 
 
@@ -92,11 +93,13 @@ class Square:
         self.w = w
         self.h = h
 
-        self.surf = pg.transform.scale(self.surf, (self.w , self.h))
+        self.surf = pg.transform.scale(self.surf_origin, (self.w , self.h))
         self.set_rect(self.surf)
 
     def get_xy(self):
         return self.x, self.y
+    def get_wh(self):
+        return self.w, self.h
 
     def relative_scale(self, s, x, y):
         if self.scalable:
@@ -109,7 +112,7 @@ class Square:
 
             self.set_time(self.scale)
 
-            self.surf = pg.Surface((self.w, self.h))
+            self.surf = pg.transform.scale(self.surf_origin, (self.w , self.h))
             self.set_rect(self.surf)
     def relative_rescale(self, s, x, y):
         self.relative_scale(1/s, x, y)
@@ -118,10 +121,10 @@ class Square:
         if self.scalable:
             if self.zoom_in:
                 self.zoom_in = False
-                self.relative_scale(0.9, self.screen_rect.width//2, self.screen_rect.height//2)
+                self.relative_scale(0.96, self.screen_rect.width//2, self.screen_rect.height//2)
             if self.zoom_out:
                 self.zoom_out = False
-                self.relative_scale(1+1/9, self.screen_rect.width//2, self.screen_rect.height//2)
+                self.relative_scale(1/0.96, self.screen_rect.width//2, self.screen_rect.height//2)
             if self.zoom_reset:
                 self.zoom_reset = False
                 self.relative_scale(1/self.scale, self.screen_rect.width//2, self.screen_rect.height//2)
@@ -145,8 +148,9 @@ class Square:
         if self.render_color:
             self.surf.fill(self.c)
 
-        pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
+            pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
         self.zoom()
+
 
 class Tile(Square):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
@@ -162,23 +166,78 @@ class Tile(Square):
         self.rect = surf.get_rect()
         self.rect.center = (self.x, self.y)
 
+    # def relative_scale(self, s, x, y):
+    #     if self.scalable:
+    #         self.scale *= s
+
+    #         self.x = x - (x - self.x)*s
+    #         self.y = y - (y - self.y)*s
+    #         self.w = self.w*s
+    #         self.h = self.h*s
+
+    #         self.set_time(self.scale)
+
+    #         self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
+    #         self.set_rect(self.surf)
+
+class Mob(Tile):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
+        super().__init__(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, render_color=render_color, texture_file=texture_file, collidable=collidable)
+
+
+class Block(Tile):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
+        super().__init__(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, render_color=render_color, texture_file=texture_file, collidable=collidable)
+
+    def collision(self, tile):
+        if self.rect.colliderect(tile.rect) and self.collidable:
+            dx = tile.rect.centerx - self.rect.centerx
+            dy = tile.rect.centery - self.rect.centery
+            if abs(dx) > abs(dy):
+                if dx < 0:
+                    tile.rect.right = self.rect.left
+                else:
+                    tile.rect.left = self.rect.right
+            if abs(dx) < abs(dy):
+                if dy < 0:
+                    tile.rect.bottom = self.rect.top
+                else:
+                    tile.rect.top = self.rect.bottom
+
+
     def relative_scale(self, s, x, y):
         if self.scalable:
             self.scale *= s
 
-            self.x = x - (x - self.x)*s
-            self.y = y - (y - self.y)*s
+            self.x = x*s
+            self.y = y*s
             self.w = self.w*s
             self.h = self.h*s
 
             self.set_time(self.scale)
 
-            self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
+            self.surf = pg.transform.scale(self.surf_origin, (self.w , self.h))
             self.set_rect(self.surf)
 
-class Block(Tile):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
-        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, render_color, texture_file, collidable)
+    def zoom(self):
+        if self.scalable:
+            if self.zoom_in:
+                self.zoom_in = False
+                self.relative_scale(0.96, self.x, self.y)
+            if self.zoom_out:
+                self.zoom_out = False
+                self.relative_scale(1/0.96, self.x, self.y)
+            if self.zoom_reset:
+                self.zoom_reset = False
+                self.relative_scale(1/self.scale, self.x, self.y)
+    
+    def render(self):
+        self.screen.blit(self.surf, self.rect)
+        if self.render_color:
+            self.surf.fill(self.c)
+
+            pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
+        self.zoom()
 
 class Window(Square):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
@@ -198,7 +257,7 @@ class Window(Square):
             alpha=0
             )
         
-        self.player = Tile(
+        self.player = Mob(
             self.screen, 
             self.screen_rect, 
             x=self.w//2,
@@ -212,31 +271,26 @@ class Window(Square):
             )
         
         self.array_chuncks = np.array([
-            [0, 1, 2, 1, 0, 2,],
-            [1, 2, 1, 0, 2, 0,],
-            [2, 1, 0, 2, 0, 1,],
-            [0, 1, 2, 1, 0, 2,],
-            [1, 2, 1, 0, 2, 0,],
-            [2, 1, 0, 2, 0, 1,],
-            [0, 1, 2, 1, 0, 2,],
-            [1, 2, 1, 0, 2, 0,],
-            [2, 1, 0, 2, 0, 1,],
-            
-            ]
-        )
+            [0, 1, 2],
+            [1, 2, 0],
+            [2, 0, 1],
+        ])
 
         self.chuncks = self.array_chuncks.copy().astype(object)
 
         for i, j in np.argwhere(self.array_chuncks != np.nan)[::-1]:
-            self.chuncks[i, j] = Map(
+            self.chuncks[i, j] = Chunck(
                 self.screen, 
                 self.screen_rect, 
                 x=self.w//2 + j*32*16 - 32*16*(self.array_chuncks.shape[1]//2),
                 y=self.h//2 + i*32*16 - 32*16*(self.array_chuncks.shape[0]//2),
+                # x=self.w//2,
+                # y=self.h//2,
                 w=32*16,
                 h=32*16,
                 c=COLORS[self.array_chuncks[i, j]],
-                alpha=255
+                alpha=255,
+                objects=[]
                 )
         
 
@@ -268,7 +322,6 @@ class Window(Square):
         for i in range(self.number_number):
             self.objects[i].set_screen(self.surf, self.rect)
 
-
     def move(self):
         for i in range(self.number_number):
             self.objects[i].set_x(self.objects[i].x - self.camera.x_rel)
@@ -278,8 +331,6 @@ class Window(Square):
         self.camera.set_y(self.h//2)
         self.player.set_x(self.camera.x)
         self.player.set_y(self.camera.y)
-        
-
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -291,6 +342,80 @@ class Window(Square):
         for i in range(self.number_number):
             self.objects[i].render()
         self.move()
+
+class Chunck(Square):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32*16, h=32*16, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
+        super().__init__(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc)
+
+        self.array_blocks = np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+        ])
+
+        self.blocks = self.array_blocks.copy().astype(object)
+
+        for i, j in np.argwhere(self.array_blocks != np.nan)[::-1]:
+            self.blocks[i, j] = Block(
+                self.surf, 
+                self.rect, 
+                x=self.w//2 + j*32 - 32*(self.array_blocks.shape[1]//2)+16,
+                y=self.h//2 + i*32 - 32*(self.array_blocks.shape[0]//2)+16,
+                # x=self.w//2 + j*32 ,
+                # y=self.h//2 + i*32 ,
+                w=32,
+                h=32,
+                c=COLORS[self.array_blocks[i, j]],
+                alpha=50,
+                texture_file=['./tiles/grass.png', './tiles/block.png'][self.array_blocks[i, j]],
+                render_color=False
+                )
+            
+        
+        self.objects = objects + list(self.blocks.reshape(-1))
+
+        self.set_objects(self.objects)
+
+    def set_objects(self, objects=[]):
+        self.objects = objects
+        self.number_number = len(self.objects)
+
+        for i in range(self.number_number):
+            self.objects[i].set_screen(self.surf, self.rect)
+
+    # def move(self):
+    #     for i in range(self.number_number):
+    #         self.objects[i].set_x(self.objects[i].x)
+    #         self.objects[i].set_y(self.objects[i].y)
+    #     # print(self.objects[0].get_xy())
+
+    def event_handler(self, event):
+        super().event_handler(event)
+        for i in range(self.number_number):
+            self.objects[i].event_handler(event)
+
+    def render(self):
+        super().render()
+        # self.set_objects(self.objects)
+        for i in range(self.number_number):
+            self.objects[i].render()
+            self.objects[i].set_screen(self.surf, self.rect)
+        # self.move()
+        # print(self.objects[0].get_xy(), self.objects[0].scale, self.get_wh(), self.scale)
+
 
 
 class Map(Square):
