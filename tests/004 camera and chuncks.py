@@ -151,7 +151,6 @@ class Square:
             pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
         self.zoom()
 
-
 class Tile(Square):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
         super().__init__(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, render_color=render_color)
@@ -342,6 +341,7 @@ class Window(Square):
         for i in range(self.number_number):
             self.objects[i].render()
         self.move()
+        print(self.x, self.y)
 
 class Chunck(Square):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32*16, h=32*16, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
