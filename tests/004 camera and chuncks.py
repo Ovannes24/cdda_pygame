@@ -270,10 +270,10 @@ class Window(Square):
             self.objects[i].set_x(self.objects[i].x - self.camera.x_rel)
             self.objects[i].set_y(self.objects[i].y - self.camera.y_rel)
         
-        self.camera.x = self.w//2
-        self.camera.y = self.h//2
-        self.block.x = self.camera.x
-        self.block.y = self.camera.y
+        self.camera.set_x(self.w//2)
+        self.camera.set_y(self.h//2)
+        self.block.set_x(self.camera.x)
+        self.block.set_y(self.camera.y)
         
 
 
@@ -388,8 +388,8 @@ class Game:
             self.screen_rect, 
             x=self.screen_rect.centerx,
             y=self.screen_rect.centery,
-            w=800,
-            h=700,
+            w=900,
+            h=800,
             c=BLACK,
             alpha=255,
             objects=[]
