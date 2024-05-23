@@ -148,8 +148,8 @@ class Square:
         pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
         self.zoom()
 
-class Block(Square):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
+class Tile(Square):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
         super().__init__(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, render_color=render_color)
 
         self.texture_file = texture_file
@@ -176,6 +176,10 @@ class Block(Square):
             self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
             self.set_rect(self.surf)
 
+class Block(Tile):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, render_color, texture_file, collidable)
+
 class Window(Square):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
         super().__init__(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc)
@@ -191,10 +195,10 @@ class Window(Square):
             w=self.w,
             h=self.w,
             c=GREEN,
-            alpha=50
+            alpha=0
             )
         
-        self.block = Block(
+        self.player = Tile(
             self.screen, 
             self.screen_rect, 
             x=self.w//2,
@@ -249,7 +253,7 @@ class Window(Square):
 
         self.objects = objects + [
             *list(self.chuncks.reshape(-1)),
-            self.block,
+            self.player,
             self.camera,
         ]
 
@@ -272,8 +276,8 @@ class Window(Square):
         
         self.camera.set_x(self.w//2)
         self.camera.set_y(self.h//2)
-        self.block.set_x(self.camera.x)
-        self.block.set_y(self.camera.y)
+        self.player.set_x(self.camera.x)
+        self.player.set_y(self.camera.y)
         
 
 
