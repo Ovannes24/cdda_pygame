@@ -157,6 +157,7 @@ class Tile(Square):
 
         self.texture_file = texture_file
         self.collidable = collidable
+        self.collided = False
 
         self.surf_origin = pg.image.load(self.texture_file).convert_alpha()
         self.surf = self.surf_origin
@@ -183,7 +184,7 @@ class Tile(Square):
 class Mob(Tile):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
         super().__init__(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, render_color=render_color, texture_file=texture_file, collidable=collidable)
-
+        
 
 class Block(Tile):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE, render_color=True, texture_file=None, collidable=False) -> None:
@@ -194,15 +195,24 @@ class Block(Tile):
             dx = tile.rect.centerx - self.rect.centerx
             dy = tile.rect.centery - self.rect.centery
             if abs(dx) > abs(dy):
+                tile.collided = True
+                x_rel = tile.get_xy()[0]
                 if dx < 0:
                     tile.set_x(self.rect.left-self.w/2)
                 else:
                     tile.set_x(self.rect.right+self.w/2)
+                x_rel -= tile.get_xy()[0]
+                # game.map_window.camera.x_rel = x_rel
             if abs(dx) < abs(dy):
+                tile.collided = True
+                y_rel = tile.get_xy()[1]
                 if dy < 0:
                     tile.set_y(self.rect.top-self.h/2)
                 else:
                     tile.set_y(self.rect.bottom+self.h/2)
+                y_rel -= tile.get_xy()[1]
+                # game.map_window.camera.y_rel = y_rel
+                
 
 
     # def relative_scale(self, s, x, y):
@@ -327,9 +337,6 @@ class Window(Square):
             self.objects[i].set_screen(self.surf, self.rect)
 
     def move(self):
-        for i in range(self.number_number):
-            self.objects[i].set_x(self.objects[i].x - self.camera.x_rel)
-            self.objects[i].set_y(self.objects[i].y - self.camera.y_rel)
         
 
         # self.camera.set_x(self.w//2)
@@ -344,13 +351,24 @@ class Window(Square):
             for j in range(len(self.chuncks.reshape(-1)[i].objects)):
                 self.chuncks.reshape(-1)[i].objects[j].collision(self.player)
 
+        if self.player.collided:
+            self.camera.x_rel = 0
+            self.camera.y_rel = 0
+
+            self.camera.kill_move()
 
         # print(self.chuncks.reshape(-1)[i].objects[j].x)
+        # self.camera.set_x(self.player.x)
         self.player.set_x(self.player.x + self.camera.x_rel)
         self.player.set_y(self.player.y + self.camera.y_rel)
-        self.camera.set_x(self.player.x)
-        self.camera.set_y(self.player.y)
+        self.camera.tile_follow(self.player)
+        # self.camera.set_y(self.player.y)
                 
+        for i in range(self.number_number):
+            self.objects[i].set_x(self.objects[i].x - self.camera.x_rel)
+            self.objects[i].set_y(self.objects[i].y - self.camera.y_rel)
+        
+        self.player.collided = False
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -358,6 +376,7 @@ class Window(Square):
             self.objects[i].event_handler(event)
 
     def render(self):
+        
         super().render()
         for i in range(self.number_number):
             self.objects[i].render()
@@ -419,6 +438,12 @@ class Chunck(Square):
             self.objects[i].set_screen(self.screen, self.screen_rect)
 
     def move(self):
+        if game.map_window.player.collided:
+            game.map_window.camera.x_rel = 0
+            game.map_window.camera.y_rel = 0
+            # game.map_window.camera.y_rel.kill_move()
+
+        game.map_window.player.collided = False
         for i in range(self.number_number):
             self.objects[i].set_x(self.objects[i].x - game.map_window.camera.x_rel)
             self.objects[i].set_y(self.objects[i].y - game.map_window.camera.y_rel)
@@ -435,7 +460,7 @@ class Chunck(Square):
         for i in range(self.number_number):
             self.objects[i].set_screen(self.screen, self.screen_rect)
             self.objects[i].render()
-        self.move()
+        self.move() 
         # print(self.objects[0].get_xy(), self.objects[0].scale, self.get_wh(), self.scale)
 
 
@@ -463,16 +488,26 @@ class Camera(Square):
     def move(self):
         # print(self.speed, self.time)
         if self.up_pressed:
-            self.set_y(self.y - self.speed)
+            self.set_y(self.y + self.y_rel)
         if self.down_pressed:
-            self.set_y(self.y + self.speed)
+            self.set_y(self.y + self.y_rel)
         if self.left_pressed:
-            self.set_x(self.x - self.speed)
+            self.set_x(self.x + self.x_rel)
         if self.right_pressed:
-            self.set_x(self.x + self.speed)
+            self.set_x(self.x + self.x_rel)
 
         # if self.up_pressed or self.down_pressed or self.left_pressed or self.right_pressed:
         #     print(self.get_xy())
+
+    def kill_move(self):
+        self.up_pressed = False
+        self.down_pressed = False
+        self.left_pressed = False
+        self.right_pressed = False
+
+    def tile_follow(self, tile):
+        self.set_y(tile.get_xy()[1])
+        self.set_x(tile.get_xy()[0])
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -509,7 +544,7 @@ class Camera(Square):
 
     def render(self):
         super().render()
-        self.move()
+        # self.move()
 
 
 
