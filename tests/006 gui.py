@@ -69,7 +69,7 @@ class Class:
         pass
 
 class SquareGUI:
-    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY, alpha=255, bc=WHITE) -> None:
         self.set_screen(screen, screen_rect)
         self.x = x
         self.y = y
@@ -107,7 +107,7 @@ class SquareGUI:
     def set_wh(self, w, h):
         self.w = w
         self.h = h
-        self.surf = pg.transform.scale(self.surf_origin, (self.w+2, self.h+2))
+        self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
         self.set_rect(self.surf)
 
     def get_xy(self):
@@ -168,7 +168,7 @@ class SquareGUI:
 
 class SquarePhysicalGUI(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
-        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
+        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc)
         
         self.scale = 1
         self.zoom_in = False
@@ -195,7 +195,7 @@ class SquarePhysicalGUI(SquareGUI):
 
             self.set_time(self.scale)
 
-            self.surf = pg.transform.scale(self.surf_origin, (self.w+2, self.h+2))
+            self.surf = pg.transform.scale(self.surf_origin, (self.w+1, self.h+1))
             self.set_rect(self.surf)
 
     def relative_rescale(self, s, x, y):
@@ -205,10 +205,10 @@ class SquarePhysicalGUI(SquareGUI):
         if self.scalable:
             if self.zoom_in:
                 self.zoom_in = False
-                self.relative_scale(0.96, self.screen_rect.width//2, self.screen_rect.height//2)
+                self.relative_scale(0.91, self.screen_rect.width//2, self.screen_rect.height//2)
             if self.zoom_out:
                 self.zoom_out = False
-                self.relative_scale(1/0.96, self.screen_rect.width//2, self.screen_rect.height//2)
+                self.relative_scale(1/0.91, self.screen_rect.width//2, self.screen_rect.height//2)
             if self.zoom_reset:
                 self.zoom_reset = False
                 self.relative_scale(1/self.scale, self.screen_rect.width//2, self.screen_rect.height//2)
@@ -258,17 +258,40 @@ class BlockGUI(SquarePhysicalGUI):
     def render(self):
         self.screen.blit(self.surf, self.rect)
         self.zoom()
-    
+
 class HPBarGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect,  x=0, y=0, w=CELL_SIZE, h=2, c=RED, hp=100, **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
 
         self.render_bc = False
 
-        self.hp = 100
-        self.hp_max = self.hp
+        self.hp_max = 100
+        self.hp = self.hp_max
 
         self.w_max = self.w * (self.hp/self.hp_max)
+
+    def relative_scale(self, s, x, y):
+        if self.scalable:
+            self.scale *= s
+
+            self.x = x - (x - self.x)*s
+            self.y = y - (y - self.y)*s
+            self.w_max = self.w_max*s
+            self.w = self.w*s
+            self.h = self.h*s
+
+            self.set_time(self.scale)
+
+            self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
+            self.set_rect(self.surf)
+
+    def reset_block(self):
+        if self.w <= 0:
+            self.w = 0
+        if self.h <= 0:
+            self.h = 0
+
+        self.set_wh(self.w, self.h)
 
     def reset_hp_w(self):
         self.w = self.w_max * (self.hp/self.hp_max)
@@ -283,16 +306,18 @@ class HPBarGUI(SquarePhysicalGUI):
         self.reset_hp_w()
     
     def hit_hp(self, val):
-        self.hp -= val
-        self.reset_hp_w()
+        if not (self.hp - val >= self.hp_max):
+            self.hp -= val
+            self.reset_hp_w()
 
     def heal_hp(self, val):
-        self.hp += val
-        self.reset_hp_w()
+        if not (self.hp + val >= self.hp_max):
+            self.hp += val
+            self.reset_hp_w()
 
 class MobGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
-        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
+        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc)
 
         self.texture_file = texture_file
 
@@ -305,7 +330,7 @@ class MobGUI(SquarePhysicalGUI):
             screen_rect, 
             x=self.get_xy()[0], 
             y=self.get_xy()[1], 
-            w=CELL_SIZE, 
+            w=self.w, 
             h=4, 
             c=RED, 
             hp=100 
@@ -322,18 +347,45 @@ class MobGUI(SquarePhysicalGUI):
     def reset_texture(self, texture_file):
         self.texture_file = texture_file
 
+        self.render_color = False
+        self.render_bc = False
+
         self.surf_origin = pg.image.load(self.texture_file).convert_alpha()
         self.surf = self.surf_origin
         self.set_rect(self.surf)
+
+    def reset_color(self, color):
+        self.c = color
+        
+        self.render_color = True
+        self.render_bc = False
+
+        self.surf_origin = pg.Surface((self.w, self.h))
+        self.surf = self.surf_origin
+        self.set_rect(self.surf)
+
+    def reset_alpha(self, alpha):
+        self.alpha = alpha
+        
+        # self.render_color = True
+        # self.render_bc = False
+
+        self.surf.set_alpha(self.alpha)
+        # self.surf_origin = pg.Surface((self.w, self.h))
+        # self.surf = self.surf_origin
+        # self.set_rect(self.surf)
+
+
 
     def event_handler(self, event):
         super().event_handler(event)
         self.hp_bar.event_handler(event)
 
     def render(self):
-        self.screen.blit(self.surf, self.rect)
-        self.hp_bar.render()
+        # self.screen.blit(self.surf, self.rect)
+        super().render()
         self.hp_bar.set_bottomleft(*self.get_topleft())
+        self.hp_bar.render()
         self.zoom()
 
 class Button(SquareGUI):
@@ -362,7 +414,7 @@ class Button(SquareGUI):
 
 class MapGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
-        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
+        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc)
 
         s1 = SquarePhysicalGUI(
             screen, 
@@ -540,8 +592,8 @@ class Square:
             screen_rect=screen_rect,
             x=self.x*32,
             y=self.y*32,
-            w=32,
-            h=32
+            w=self.w*32,
+            h=self.h*32
         )
 
     def get_x(self):
@@ -645,8 +697,6 @@ class Square:
             #     else:
             #         self.set_bottom(square.get_top())
 
-
-
 class Block(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None,  id=0) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
@@ -706,10 +756,9 @@ class Map(Square):
         for i, j in self.not_nan:
             self.blocks[i, j].render()
 
-
 class Mob(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
-        super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
+        super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         self.collidable = True 
         self.time = 1
         self.speed = self.time * 0.1
@@ -717,12 +766,17 @@ class Mob(Square):
         self.gui = MobGUI(
             screen=screen,
             screen_rect=screen_rect,
-            x=x*32,
-            y=y*32,
-            w=32,
-            h=32,
+            x=self.x*32,
+            y=self.y*32,
+            w=self.w*32,
+            h=self.h*32,
             c=GREEN
         )
+
+        self.gui.render_color = False
+        self.gui.render_bc = False
+        
+        
         
     def move(self):
         self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
@@ -740,10 +794,11 @@ class Mob(Square):
 
 class Player(Mob):
     def __init__(self, x=0, y=0, w=1, h=1,screen=None, screen_rect=None) -> None:
-        super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
+        super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         
         
         self.gui.reset_texture('./tiles/player.png')
+        # self.gui.reset_color(BLUE)
 
         self.speed = self.time*0.1
 
@@ -808,9 +863,49 @@ class Player(Mob):
                 self.right_pressed = False
     
     def render(self):
+        # print(self.get_center(), self.gui.scale)
         self.gui.render()
         self.move()
         # print('Plr', self.get_x(), self.get_y())
+
+class KillZone(Mob):
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
+        super().__init__(x, y, w, h, screen, screen_rect)
+
+        self.gui.reset_color(RED)
+        self.gui.reset_alpha(64)
+
+    def move(self):
+        self.set_x(self.get_x())
+        self.set_y(self.get_y())
+
+        self.gui.set_x(self.x*self.gui.w)
+        self.gui.set_y(self.y*self.gui.h)
+
+
+    def render(self):
+        self.gui.render()
+        self.move()
+
+class HealZone(Mob):
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
+        super().__init__(x, y, w, h, screen, screen_rect)
+
+        self.gui.reset_color(GREEN)
+        self.gui.reset_alpha(64)
+
+    def move(self):
+        self.set_x(self.get_x())
+        self.set_y(self.get_y())
+
+        self.gui.set_x(self.x*self.gui.w)
+        self.gui.set_y(self.y*self.gui.h)
+
+
+    def render(self):
+        self.gui.render()
+        self.move()
+
 
 class Camera(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
@@ -857,8 +952,13 @@ class GamePlay:
         
         self.map = Map(screen=screen, screen_rect=screen_rect)
         self.mob = Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
+        self.kill_zone = KillZone(x=8, y=8, screen=screen, screen_rect=screen_rect)
+        self.heal_zone = HealZone(x=8, y=10, screen=screen, screen_rect=screen_rect)
+        
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
+        # self.player.gui.render_bc = True
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
+
 
         # self.camera.follow(self.player)
 
@@ -873,6 +973,13 @@ class GamePlay:
         self.mob.gui.set_x(self.mob.gui.x - self.camera.gui.x + self.screen_rect.width/2)
         self.mob.gui.set_y(self.mob.gui.y - self.camera.gui.y + self.screen_rect.height/2)
 
+        self.kill_zone.gui.set_x(self.kill_zone.gui.x - self.camera.gui.x + self.screen_rect.width/2)
+        self.kill_zone.gui.set_y(self.kill_zone.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+
+        self.heal_zone.gui.set_x(self.heal_zone.gui.x - self.camera.gui.x + self.screen_rect.width/2)
+        self.heal_zone.gui.set_y(self.heal_zone.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+
+
 
         self.camera.gui.set_x(self.camera.gui.x - self.camera.gui.x + self.screen_rect.width/2)
         self.camera.gui.set_y(self.camera.gui.y - self.camera.gui.y + self.screen_rect.height/2)
@@ -886,7 +993,21 @@ class GamePlay:
             self.player.collision(self.map.blocks[int(np.rint(self.player.y))+i-1, int(np.rint(self.player.x))+j-1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
             self.mob.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
+        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
+            self.kill_zone.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
         
+        if self.kill_zone.collidesquare(self.player):
+            self.player.gui.hp_bar.hit_hp(1)
+        if self.kill_zone.collidesquare(self.mob):
+            self.mob.gui.hp_bar.hit_hp(1)
+        
+        if self.heal_zone.collidesquare(self.player):
+            self.player.gui.hp_bar.heal_hp(1)
+        if self.heal_zone.collidesquare(self.mob):
+            self.mob.gui.hp_bar.heal_hp(1)
+        
+
+
         # self.player.collision(self.mob)
         
 
@@ -895,6 +1016,9 @@ class GamePlay:
         self.map.event_handler(event)
 
         self.mob.event_handler(event)
+        self.kill_zone.event_handler(event)
+        self.heal_zone.event_handler(event)
+        
         self.player.event_handler(event)
         
     def render(self):
@@ -902,6 +1026,9 @@ class GamePlay:
         self.map.render()
         self.camera.render()
         self.mob.render()
+        self.kill_zone.render()
+        self.heal_zone.render()
+        
         self.player.render()
         self.collide()
         self.camera.follow(self.player)
