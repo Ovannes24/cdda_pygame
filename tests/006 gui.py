@@ -106,7 +106,7 @@ class SquareGUI:
     def set_wh(self, w, h):
         self.w = w
         self.h = h
-        self.surf = pg.transform.scale(self.surf_origin, (self.w , self.h))
+        self.surf = pg.transform.scale(self.surf_origin, (self.w+2, self.h+2))
         self.set_rect(self.surf)
 
     def get_xy(self):
@@ -193,7 +193,7 @@ class SquarePhysicalGUI(SquareGUI):
 
             self.set_time(self.scale)
 
-            self.surf = pg.transform.scale(self.surf_origin, (self.w , self.h))
+            self.surf = pg.transform.scale(self.surf_origin, (self.w+2, self.h+2))
             self.set_rect(self.surf)
 
     def relative_rescale(self, s, x, y):
@@ -598,6 +598,8 @@ class Square:
             #     else:
             #         self.set_bottom(square.get_top())
 
+
+
 class Block(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None,  id=0) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
@@ -623,6 +625,9 @@ class Block(Square):
         self.gui.set_x(self.x*self.gui.w)
         self.gui.set_y(self.y*self.gui.h)
 
+    def event_handler(self, event):
+        self.gui.event_handler(event)
+
     def render(self):
         self.gui.render()
         self.move()
@@ -645,6 +650,10 @@ class Map(Square):
                 screen_rect=screen_rect,
                 id=self.block_floor_id[i, j] 
             )
+
+    def event_handler(self, event):
+        for i, j in self.not_nan:
+            self.blocks[i, j].gui.event_handler(event)
 
     def render(self):
         for i, j in self.not_nan:
@@ -675,7 +684,8 @@ class Mob(Square):
         self.gui.set_x(self.x*self.gui.w)
         self.gui.set_y(self.y*self.gui.h)
 
-        
+    def event_handler(self, event):
+        self.gui.event_handler(event)
         
     def render(self):
         self.gui.render()
@@ -715,6 +725,7 @@ class Player(Mob):
         self.gui.set_y(self.y*self.gui.h)
 
     def event_handler(self, event):
+        self.gui.event_handler(event)
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_w and not self.down_pressed:
                 self.up_pressed = True
@@ -833,7 +844,10 @@ class GamePlay:
         
 
     def event_handler(self, event):
-        # self.mob.event_handler(event)
+        
+        self.map.event_handler(event)
+
+        self.mob.event_handler(event)
         self.player.event_handler(event)
         
     def render(self):
