@@ -85,6 +85,7 @@ class SquareGUI:
         self.set_rect(self.surf)
 
         self.render_color = True
+        self.render_bc = True
 
 
 
@@ -162,6 +163,7 @@ class SquareGUI:
         self.screen.blit(self.surf, self.rect)
         if self.render_color:
             self.surf.fill(self.c)
+        if self.render_bc:
             pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
 
 class SquarePhysicalGUI(SquareGUI):
@@ -257,6 +259,36 @@ class BlockGUI(SquarePhysicalGUI):
         self.screen.blit(self.surf, self.rect)
         self.zoom()
     
+class HPBarGUI(SquarePhysicalGUI):
+    def __init__(self, screen, screen_rect,  x=0, y=0, w=CELL_SIZE, h=2, c=RED, hp=100, **kwargs) -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
+
+        self.render_bc = False
+
+        self.hp = 100
+        self.hp_max = self.hp
+
+        self.w_max = self.w * (self.hp/self.hp_max)
+
+    def reset_hp_w(self):
+        self.w = self.w_max * (self.hp/self.hp_max)
+        self.reset_block()
+
+    def get_hp(self):
+        self.reset_hp_w()
+        return self.hp
+    
+    def set_hp(self, val):
+        self.hp = val
+        self.reset_hp_w()
+    
+    def hit_hp(self, val):
+        self.hp -= val
+        self.reset_hp_w()
+
+    def heal_hp(self, val):
+        self.hp += val
+        self.reset_hp_w()
 
 class MobGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
@@ -268,6 +300,17 @@ class MobGUI(SquarePhysicalGUI):
         self.surf = self.surf_origin
         self.set_rect(self.surf)
 
+        self.hp_bar = HPBarGUI(
+            screen, 
+            screen_rect, 
+            x=self.get_xy()[0], 
+            y=self.get_xy()[1], 
+            w=CELL_SIZE, 
+            h=4, 
+            c=RED, 
+            hp=100 
+        )
+
     def reflect_texture(self):
         self.surf = pg.transform.flip(self.surf, True, False)
         self.set_rect(self.surf)
@@ -276,8 +319,6 @@ class MobGUI(SquarePhysicalGUI):
         self.rect = surf.get_rect()
         self.rect.center = (self.x, self.y)
 
-
-
     def reset_texture(self, texture_file):
         self.texture_file = texture_file
 
@@ -285,8 +326,14 @@ class MobGUI(SquarePhysicalGUI):
         self.surf = self.surf_origin
         self.set_rect(self.surf)
 
+    def event_handler(self, event):
+        super().event_handler(event)
+        self.hp_bar.event_handler(event)
+
     def render(self):
         self.screen.blit(self.surf, self.rect)
+        self.hp_bar.render()
+        self.hp_bar.set_bottomleft(*self.get_topleft())
         self.zoom()
 
 class Button(SquareGUI):
