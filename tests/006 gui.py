@@ -49,10 +49,10 @@ block_floor_id = np.array([
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
+    [1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
+    [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
+    [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
+    [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
 ])
 
@@ -233,12 +233,55 @@ class SquarePhysicalGUI(SquareGUI):
         self.zoom()
 
 class BlockGUI(SquarePhysicalGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=BLUE, alpha=255, bc=WHITE) -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=BLUE, alpha=255, bc=WHITE, texture_file='./tiles/grass.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
 
+        self.texture_file = texture_file
+
+        self.surf_origin = pg.image.load(self.texture_file).convert_alpha()
+        self.surf = self.surf_origin
+        self.set_rect(self.surf)
+
+    def set_rect(self, surf):
+        self.rect = surf.get_rect()
+        self.rect.center = (self.x, self.y)
+
+    def reset_texture(self, texture_file):
+        self.texture_file = texture_file
+
+        self.surf_origin = pg.image.load(self.texture_file).convert_alpha()
+        self.surf = self.surf_origin
+        self.set_rect(self.surf)
+
+    def render(self):
+        self.screen.blit(self.surf, self.rect)
+        self.zoom()
+    
+
 class MobGUI(SquarePhysicalGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE) -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
+
+        self.texture_file = texture_file
+
+        self.surf_origin = pg.image.load(self.texture_file).convert_alpha()
+        self.surf = self.surf_origin
+        self.set_rect(self.surf)
+
+    def set_rect(self, surf):
+        self.rect = surf.get_rect()
+        self.rect.center = (self.x, self.y)
+
+    def reset_texture(self, texture_file):
+        self.texture_file = texture_file
+
+        self.surf_origin = pg.image.load(self.texture_file).convert_alpha()
+        self.surf = self.surf_origin
+        self.set_rect(self.surf)
+
+    def render(self):
+        self.screen.blit(self.surf, self.rect)
+        self.zoom()
 
 class Button(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=RED, text='+', **kwargs) -> None:
@@ -565,7 +608,8 @@ class Block(Square):
             y=y*32,
             w=32,
             h=32,
-            c=[BLUE, RED][self.id]
+            c=[BLUE, RED][self.id],
+            texture_file=['./tiles/grass.png', './tiles/block.png'][self.id]
         )
     def move(self):
         self.gui.set_x(self.x*self.gui.w)
@@ -633,7 +677,10 @@ class Player(Mob):
     def __init__(self, x=0, y=0, w=1, h=1,screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
         
-        self.speed = self.time*0.25
+        
+        self.gui.reset_texture('./tiles/player.png')
+
+        self.speed = self.time*0.19
 
         self.x_rel = 0
         self.y_rel = 0
@@ -762,7 +809,7 @@ class GamePlay:
         self.player.gui.set_y(self.screen_rect.height/2)
         
     def collide(self):
-        print(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1])
+        # print(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1] == 1):
             self.player.collision(self.map.blocks[int(np.rint(self.player.y))+i-1, int(np.rint(self.player.x))+j-1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
