@@ -872,6 +872,8 @@ class KillZone(Mob):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
 
+        self.hp_changer = 1
+
         self.gui.reset_color(RED)
         self.gui.reset_alpha(64)
 
@@ -890,6 +892,8 @@ class KillZone(Mob):
 class HealZone(Mob):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
+
+        self.hp_changer = 1
 
         self.gui.reset_color(GREEN)
         self.gui.reset_alpha(64)
@@ -997,14 +1001,14 @@ class GamePlay:
             self.kill_zone.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
         
         if self.kill_zone.collidesquare(self.player):
-            self.player.gui.hp_bar.hit_hp(1)
+            self.player.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
         if self.kill_zone.collidesquare(self.mob):
-            self.mob.gui.hp_bar.hit_hp(1)
+            self.mob.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
         
         if self.heal_zone.collidesquare(self.player):
-            self.player.gui.hp_bar.heal_hp(1)
+            self.player.gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
         if self.heal_zone.collidesquare(self.mob):
-            self.mob.gui.hp_bar.heal_hp(1)
+            self.mob.gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
         
 
 
