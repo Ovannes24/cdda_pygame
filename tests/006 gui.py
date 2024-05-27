@@ -301,7 +301,6 @@ class HPBarGUI(SquarePhysicalGUI):
         self.w_max = self.w * (self.hp/self.hp_max)
 
     def __del__(self):
-        del self.render_bc
         del self.hp_max
         del self.hp
         del self.w_max
@@ -1224,7 +1223,7 @@ class GamePlay:
         self.n_objects -= 1
 
     def del_objects(self):
-        for o in set(self._del_objects_list):
+        for o in np.sort(list(set(self._del_objects_list)))[::-1]:
             self.del_object(o)
         self._del_objects_list = []
 
@@ -1311,7 +1310,6 @@ class GamePlay:
         self.player.event_handler(event)
         
     def render(self):
-        print(self.n_objects)
         self.camera_center()
         self.map.render()
         self.camera.render()
@@ -1326,6 +1324,7 @@ class GamePlay:
         self.cursor.render()
         self.add_object()
         self.collide()
+        print(self.n_objects, self._del_objects_list)
         self.del_objects()
         self.camera.follow(self.player)
         
