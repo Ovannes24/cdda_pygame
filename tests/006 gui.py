@@ -1208,8 +1208,8 @@ class GamePlay:
                     y=self.player.y, 
                     screen=self.screen, 
                     screen_rect=self.screen_rect,
-                    dx=(self.cursor.x - self.player.x) / 100,
-                    dy=(self.cursor.y - self.player.y) / 100,
+                    dx=(self.cursor.x - self.player.x) / 32,
+                    dy=(self.cursor.y - self.player.y) / 32,
                     hp_changer=2
                 )
             )
@@ -1322,6 +1322,7 @@ class GamePlay:
 
         self.player.render()
         self.cursor.render()
+        self.player.isFire = True 
         self.add_object()
         self.collide()
         print(self.n_objects, self._del_objects_list)
