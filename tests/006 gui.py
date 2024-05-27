@@ -315,15 +315,25 @@ class HPBarGUI(SquarePhysicalGUI):
             self.hp += val
             self.reset_hp_w()
 
-class MobGUI(SquarePhysicalGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
-        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc)
-
+class TextureSquareGUI(SquarePhysicalGUI):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
         self.texture_file = texture_file
+
+        self.render_color = False
+        self.render_bc = False
 
         self.surf_origin = pg.image.load(self.texture_file).convert_alpha()
         self.surf = self.surf_origin
         self.set_rect(self.surf)
+
+    def set_rect(self, surf):
+        self.rect = surf.get_rect()
+        self.rect.center = (self.x, self.y)
+
+class MobGUI(TextureSquareGUI):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
+        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, texture_file=texture_file)
 
         self.hp_bar = HPBarGUI(
             screen, 
@@ -387,6 +397,10 @@ class MobGUI(SquarePhysicalGUI):
         self.hp_bar.set_bottomleft(*self.get_topleft())
         self.hp_bar.render()
         self.zoom()
+
+class CursorGUI(TextureSquareGUI):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/cursor.png') -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, texture_file=texture_file)
 
 class Button(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=RED, text='+', **kwargs) -> None:
@@ -796,7 +810,6 @@ class Player(Mob):
     def __init__(self, x=0, y=0, w=1, h=1,screen=None, screen_rect=None) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         
-        
         self.gui.reset_texture('./tiles/player.png')
         # self.gui.reset_color(BLUE)
 
@@ -910,7 +923,6 @@ class HealZone(Mob):
         self.gui.render()
         self.move()
 
-
 class Camera(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h)
@@ -947,7 +959,40 @@ class Camera(Square):
         self.gui.render()
         # self.move()
         # print('Cam', self.get_x(), self.get_y())
-        
+
+class Cursor(Square):
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
+        super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
+
+        self.gui = CursorGUI(
+            screen=screen,
+            screen_rect=screen_rect,
+            x=self.x*32,
+            y=self.y*32,
+            w=self.w*32,
+            h=self.h*32,
+            c=BLUE
+        )
+    
+    
+    def move(self):
+        self.set_x(self.x)
+        self.set_y(self.y)
+
+        self.gui.set_x(self.x*self.gui.w)
+        self.gui.set_y(self.y*self.gui.h)
+
+    def event_handler(self, event):
+        self.gui.event_handler(event)
+
+        if event.type == pg.MOUSEMOTION:
+            # print(event)
+            self.set_x((event.pos[0] - self.gui.screen_rect.topleft[0])/self.gui.w)
+            self.set_y((event.pos[1] - self.gui.screen_rect.topleft[1])/self.gui.h)
+
+    def render(self):
+        self.gui.render()
+        self.move()
 
 class GamePlay:
     def __init__(self, screen=None, screen_rect=None) -> None:
@@ -962,7 +1007,7 @@ class GamePlay:
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
         # self.player.gui.render_bc = True
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
-
+        self.cursor = Cursor(x=1, y=1, screen=screen, screen_rect=screen_rect)
 
         # self.camera.follow(self.player)
 
@@ -987,6 +1032,9 @@ class GamePlay:
 
         self.camera.gui.set_x(self.camera.gui.x - self.camera.gui.x + self.screen_rect.width/2)
         self.camera.gui.set_y(self.camera.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+        
+        self.cursor.gui.set_x(self.cursor.gui.x - self.camera.gui.x + self.screen_rect.width/2)
+        self.cursor.gui.set_y(self.cursor.gui.y - self.camera.gui.y + self.screen_rect.height/2)
 
         self.player.gui.set_x(self.screen_rect.width/2)
         self.player.gui.set_y(self.screen_rect.height/2)
@@ -1023,6 +1071,8 @@ class GamePlay:
         self.kill_zone.event_handler(event)
         self.heal_zone.event_handler(event)
         
+
+        self.cursor.event_handler(event)
         self.player.event_handler(event)
         
     def render(self):
@@ -1033,6 +1083,7 @@ class GamePlay:
         self.kill_zone.render()
         self.heal_zone.render()
         
+        self.cursor.render()
         self.player.render()
         self.collide()
         self.camera.follow(self.player)
