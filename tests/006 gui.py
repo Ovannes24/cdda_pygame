@@ -212,7 +212,6 @@ class SquarePhysicalGUI(SquareGUI):
             if self.zoom_reset:
                 self.zoom_reset = False
                 self.relative_scale(1/self.scale, self.screen_rect.width//2, self.screen_rect.height//2)
-    
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -330,6 +329,11 @@ class TextureSquareGUI(SquarePhysicalGUI):
     def set_rect(self, surf):
         self.rect = surf.get_rect()
         self.rect.center = (self.x, self.y)
+
+    def rotate_texture(self, angle):
+        self.surf_origin = pg.transform.rotate(self.surf_origin, angle)
+        self.surf = self.surf_origin
+        self.set_rect(self.surf)
 
 class MobGUI(TextureSquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
@@ -777,6 +781,8 @@ class Mob(Square):
         self.time = 1
         self.speed = self.time * 0.1
 
+        self.isAlive = True
+
         self.gui = MobGUI(
             screen=screen,
             screen_rect=screen_rect,
@@ -789,15 +795,28 @@ class Mob(Square):
 
         self.gui.render_color = False
         self.gui.render_bc = False
-        
-        
+
+
+
+    def dead_handler(self):
+        if self.isAlive:
+            if self.gui.hp_bar.hp <= 0:
+                self.isAlive = False
+                self.gui.rotate_texture(-90)
         
     def move(self):
-        self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
-        self.set_y(self.y+np.random.choice([-self.speed, self.speed]))
+        if self.isAlive:
+            self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
+            self.set_y(self.y+np.random.choice([-self.speed, self.speed]))
 
-        self.gui.set_x(self.x*self.gui.w)
-        self.gui.set_y(self.y*self.gui.h)
+            self.gui.set_x(self.x*self.gui.w)
+            self.gui.set_y(self.y*self.gui.h)
+        else:
+            self.set_x(self.x)
+            self.set_y(self.y)
+
+            self.gui.set_x(self.x*self.gui.w)
+            self.gui.set_y(self.y*self.gui.h)
 
     def event_handler(self, event):
         self.gui.event_handler(event)
@@ -805,6 +824,7 @@ class Mob(Square):
     def render(self):
         self.gui.render()
         self.move()
+        self.dead_handler()
 
 class Player(Mob):
     def __init__(self, x=0, y=0, w=1, h=1,screen=None, screen_rect=None) -> None:
@@ -825,19 +845,29 @@ class Player(Mob):
 
         self.right_pose = True
 
+        self.isFire = False
+
 
     def move(self):
-        if self.up_pressed:
-            self.set_y(self.y + self.y_rel)
-        if self.down_pressed:
-            self.set_y(self.y + self.y_rel)
-        if self.left_pressed:
-            self.set_x(self.x + self.x_rel)
-        if self.right_pressed:
-            self.set_x(self.x + self.x_rel)
+        if self.isAlive:
+            if self.up_pressed:
+                self.set_y(self.y + self.y_rel)
+            if self.down_pressed:
+                self.set_y(self.y + self.y_rel)
+            if self.left_pressed:
+                self.set_x(self.x + self.x_rel)
+            if self.right_pressed:
+                self.set_x(self.x + self.x_rel)
 
-        self.gui.set_x(self.x*self.gui.w)
-        self.gui.set_y(self.y*self.gui.h)
+            self.gui.set_x(self.x*self.gui.w)
+            self.gui.set_y(self.y*self.gui.h)
+        else:
+            self.set_x(self.x)
+            self.set_y(self.y)
+
+            self.gui.set_x(self.x*self.gui.w)
+            self.gui.set_y(self.y*self.gui.h)
+
 
     def event_handler(self, event):
         self.gui.event_handler(event)
@@ -860,7 +890,6 @@ class Player(Mob):
                 if not self.right_pose:
                     self.right_pose = True
                     self.gui.reflect_texture()
-
         if event.type == pg.KEYUP:
             if self.up_pressed and event.key == pg.K_w:
                 self.y_rel = 0
@@ -874,18 +903,24 @@ class Player(Mob):
             if self.right_pressed and event.key == pg.K_d:
                 self.x_rel = 0
                 self.right_pressed = False
+        
+        if event.type == pg.MOUSEBUTTONDOWN:
+            self.isFire = True
+        if event.type == pg.MOUSEBUTTONUP:
+            self.isFire = False
     
     def render(self):
         # print(self.get_center(), self.gui.scale)
         self.gui.render()
         self.move()
+        self.dead_handler()
         # print('Plr', self.get_x(), self.get_y())
 
 class KillZone(Mob):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, hp_changer=1) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
 
-        self.hp_changer = 1
+        self.hp_changer = hp_changer
 
         self.gui.reset_color(RED)
         self.gui.reset_alpha(64)
@@ -914,6 +949,24 @@ class HealZone(Mob):
     def move(self):
         self.set_x(self.get_x())
         self.set_y(self.get_y())
+
+        self.gui.set_x(self.x*self.gui.w)
+        self.gui.set_y(self.y*self.gui.h)
+
+
+    def render(self):
+        self.gui.render()
+        self.move()
+
+class Bullet(KillZone):
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, dx=0, dy=0, hp_changer=1) -> None:
+        super().__init__(x, y, w, h, screen, screen_rect, hp_changer)
+        self.dx = dx
+        self.dy = dy
+        
+    def move(self):
+        self.set_x(self.get_x()+self.dx)
+        self.set_y(self.get_y()+self.dy)
 
         self.gui.set_x(self.x*self.gui.w)
         self.gui.set_y(self.y*self.gui.h)
@@ -1011,6 +1064,27 @@ class GamePlay:
 
         # self.camera.follow(self.player)
 
+        self.objects = []
+        self.n_objects = 0
+
+
+    def add_object(self):
+        if self.player.isFire:
+            self.objects.append(
+                Bullet(
+                    x=self.player.x, 
+                    y=self.player.y, 
+                    screen=self.screen, 
+                    screen_rect=self.screen_rect,
+                    dx=(self.cursor.x - self.player.x) / 100,
+                    dy=(self.cursor.y - self.player.y) / 100,
+                    hp_changer=2
+                )
+            )
+            self.n_objects +=1
+
+            self.player.isFire = False
+
 
     def camera_center(self):
         # print('Blk', self.map.blocks[0, 0].gui.x,-self.camera.gui.x, self.screen_rect.width/2) 
@@ -1028,7 +1102,10 @@ class GamePlay:
         self.heal_zone.gui.set_x(self.heal_zone.gui.x - self.camera.gui.x + self.screen_rect.width/2)
         self.heal_zone.gui.set_y(self.heal_zone.gui.y - self.camera.gui.y + self.screen_rect.height/2)
 
-
+        for o in range(self.n_objects):
+            self.objects[o].gui.set_x(self.objects[o].gui.x - self.camera.gui.x + self.screen_rect.width/2)
+            self.objects[o].gui.set_y(self.objects[o].gui.y - self.camera.gui.y + self.screen_rect.height/2)
+        
 
         self.camera.gui.set_x(self.camera.gui.x - self.camera.gui.x + self.screen_rect.width/2)
         self.camera.gui.set_y(self.camera.gui.y - self.camera.gui.y + self.screen_rect.height/2)
@@ -1045,9 +1122,18 @@ class GamePlay:
             self.player.collision(self.map.blocks[int(np.rint(self.player.y))+i-1, int(np.rint(self.player.x))+j-1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
             self.mob.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
-        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
-            self.kill_zone.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
+        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
+            self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
+        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
+            self.heal_zone.collision(self.map.blocks[int(np.rint(self.heal_zone.y))+i-1, int(np.rint(self.heal_zone.x))+j-1])
+
+        for o in range(self.n_objects):
+            for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.objects[o].y))-1:int(np.rint(self.objects[o].y))+1+1, int(np.rint(self.objects[o].x))-1:int(np.rint(self.objects[o].x))+1+1] == 1):
+                self.objects[o].collision(self.map.blocks[int(np.rint(self.objects[o].y))+i-1, int(np.rint(self.objects[o].x))+j-1])
+            if self.objects[o].collidesquare(self.mob):
+                self.mob.gui.hp_bar.hit_hp(self.objects[o].hp_changer)
         
+
         if self.kill_zone.collidesquare(self.player):
             self.player.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
         if self.kill_zone.collidesquare(self.mob):
@@ -1070,6 +1156,9 @@ class GamePlay:
         self.mob.event_handler(event)
         self.kill_zone.event_handler(event)
         self.heal_zone.event_handler(event)
+
+        for o in range(self.n_objects):
+            self.objects[o].event_handler(event)
         
 
         self.cursor.event_handler(event)
@@ -1083,10 +1172,15 @@ class GamePlay:
         self.kill_zone.render()
         self.heal_zone.render()
         
+        for o in range(self.n_objects):
+            self.objects[o].render()
+
         self.player.render()
         self.cursor.render()
         self.collide()
+        self.add_object()
         self.camera.follow(self.player)
+        print(self.n_objects)
         
         
 
