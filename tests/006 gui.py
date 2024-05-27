@@ -1083,8 +1083,8 @@ class GamePlay:
         self.kill_zone.render()
         self.heal_zone.render()
         
-        self.cursor.render()
         self.player.render()
+        self.cursor.render()
         self.collide()
         self.camera.follow(self.player)
         
