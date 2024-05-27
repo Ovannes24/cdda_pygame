@@ -87,6 +87,23 @@ class SquareGUI:
         self.render_color = True
         self.render_bc = True
 
+    def __del__(self):
+        del self.screen
+        del self.screen_rect
+        del self.x 
+        del self.y 
+        del self.w 
+        del self.h 
+        del self.c 
+        del self.alpha 
+        del self.bc 
+        del self.surf_origin
+        del self.surf
+        del self.rect
+        del self.render_color 
+        del self.render_bc
+        del self
+
 
 
     def set_screen(self, screen, screen_rect):
@@ -179,6 +196,16 @@ class SquarePhysicalGUI(SquareGUI):
 
         self.set_time(self.scale)
 
+    def __del__(self):
+        del self.scale
+        del self.zoom_in
+        del self.zoom_out
+        del self.zoom_reset
+        del self.scalable
+        del self.time
+        del self.speed
+        super().__del__()
+
     def set_time(self, t):
         self.time = t
         self.speed = self.time*10
@@ -243,6 +270,10 @@ class BlockGUI(SquarePhysicalGUI):
         self.surf = self.surf_origin
         self.set_rect(self.surf)
 
+    def __del__(self):
+        del self.self.texture_file
+        super().__del__()
+
     def set_rect(self, surf):
         self.rect = surf.get_rect()
         self.rect.center = (self.x, self.y)
@@ -268,6 +299,13 @@ class HPBarGUI(SquarePhysicalGUI):
         self.hp = self.hp_max
 
         self.w_max = self.w * (self.hp/self.hp_max)
+
+    def __del__(self):
+        del self.render_bc
+        del self.hp_max
+        del self.hp
+        del self.w_max
+        super().__del__()
 
     def relative_scale(self, s, x, y):
         if self.scalable:
@@ -326,6 +364,9 @@ class TextureSquareGUI(SquarePhysicalGUI):
         self.surf = self.surf_origin
         self.set_rect(self.surf)
 
+    def __del__(self):
+        super().__del__()
+
     def set_rect(self, surf):
         self.rect = surf.get_rect()
         self.rect.center = (self.x, self.y)
@@ -349,6 +390,10 @@ class MobGUI(TextureSquareGUI):
             c=RED, 
             hp=100 
         )
+
+    def __del__(self):
+        del self.hp_bar
+        super().__del__()
 
     def reflect_texture(self):
         self.surf = pg.transform.flip(self.surf, True, False)
@@ -406,10 +451,17 @@ class CursorGUI(TextureSquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/cursor.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, texture_file=texture_file)
 
+    def __del__(self):
+        super().__del__()
+
 class Button(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=RED, text='+', **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
         self.clicked = False
+
+    def __del__(self):
+        del self.clicked
+        super().__del__()
 
     def event_handler(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -445,7 +497,9 @@ class MapGUI(SquarePhysicalGUI):
             alpha=255
         )
 
-
+    def __del__(self):
+        del self.s1
+        super().__del__()
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -474,7 +528,14 @@ class Window(SquareGUI):
 
         self.set_objects(self.objects)
 
-
+    def __del__(self):
+        del self.btn
+        del self.scalable
+        for i in range(self.number_number):
+            del self.objects[i]
+        del self.objects
+        del self.number_number
+        super().__del__()
 
     def set_objects(self, objects=[]):
         self.objects = objects
@@ -513,6 +574,9 @@ class WindowMap(Window):
         #     bc=WHITE
         # )
 
+    def __del__(self):
+        super().__del__()
+
     def event_handler(self, event):
         super().event_handler(event)
     
@@ -535,6 +599,15 @@ class Camera(SquareGUI):
         self.down_pressed = False
         self.left_pressed = False
         self.right_pressed = False
+    
+    def __del__(self):
+        del self.x_rel
+        del self.y_rel
+        del self.up_pressed
+        del self.down_pressed
+        del self.left_pressed
+        del self.right_pressed
+        super().__del__()
 
     def move(self):
         # print(self.speed, self.time)
@@ -613,6 +686,14 @@ class Square:
             w=self.w*32,
             h=self.h*32
         )
+
+    def __del__(self):
+        del self.x
+        del self.y
+        del self.w
+        del self.h
+        del self.gui
+
 
     def get_x(self):
         return self.x
@@ -736,6 +817,14 @@ class Block(Square):
             c=[BLUE, RED][self.id],
             texture_file=['./tiles/grass.png', './tiles/block.png'][self.id]
         )
+
+    def __del__(self):
+        del self.id
+        del self.collidable
+        del self.time
+        del self.speed
+        super().__del__()
+
     def move(self):
         self.gui.set_x(self.x*self.gui.w)
         self.gui.set_y(self.y*self.gui.h)
@@ -765,6 +854,15 @@ class Map(Square):
                 screen_rect=screen_rect,
                 id=self.block_floor_id[i, j] 
             )
+
+    def __del__(self):
+        del self.block_floor_id
+        for i, j in self.not_nan:
+            del self.blocks[i, j]
+        del self.blocks
+        del self.not_nan
+        super().__del__()
+
 
     def event_handler(self, event):
         for i, j in self.not_nan:
@@ -796,7 +894,9 @@ class Mob(Square):
         self.gui.render_color = False
         self.gui.render_bc = False
 
-
+    def __del__(self):
+        del self.isAlive
+        super().__del__()
 
     def dead_handler(self):
         if self.isAlive:
@@ -847,6 +947,17 @@ class Player(Mob):
 
         self.isFire = False
 
+    def __del__(self):
+        del self.x_rel
+        del self.y_rel
+        del self.up_pressed
+        del self.down_pressed
+        del self.left_pressed
+        del self.right_pressed
+        del self.right_pose 
+        del self.isFire 
+
+        super().__del__()
 
     def move(self):
         if self.isAlive:
@@ -925,6 +1036,10 @@ class KillZone(Mob):
         self.gui.reset_color(RED)
         self.gui.reset_alpha(64)
 
+    def __del__(self):
+        del self.hp_changer
+        super().__del__()
+
     def move(self):
         self.set_x(self.get_x())
         self.set_y(self.get_y())
@@ -946,6 +1061,10 @@ class HealZone(Mob):
         self.gui.reset_color(GREEN)
         self.gui.reset_alpha(64)
 
+    def __del__(self):
+        del self.hp_changer
+        super().__del__()
+
     def move(self):
         self.set_x(self.get_x())
         self.set_y(self.get_y())
@@ -963,7 +1082,13 @@ class Bullet(KillZone):
         super().__init__(x, y, w, h, screen, screen_rect, hp_changer)
         self.dx = dx
         self.dy = dy
+
+    def __del__(self):
+        del self.dx
+        del self.dy
         
+        super().__del__()
+
     def move(self):
         self.set_x(self.get_x()+self.dx)
         self.set_y(self.get_y()+self.dy)
@@ -975,6 +1100,7 @@ class Bullet(KillZone):
     def render(self):
         self.gui.render()
         self.move()
+        # print(self.dx, self.dy)
 
 class Camera(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
@@ -993,7 +1119,11 @@ class Camera(Square):
             h=screen_rect.height-100,
             alpha=64
         )
-        
+
+    def __del__(self):
+        super().__del__()
+
+
     def move(self):
         self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
         self.set_y(self.y+np.random.choice([-self.speed, self.speed]))
@@ -1027,7 +1157,10 @@ class Cursor(Square):
             c=BLUE
         )
     
-    
+    def __del__(self):
+        super().__del__()
+
+
     def move(self):
         self.set_x(self.x)
         self.set_y(self.y)
@@ -1066,7 +1199,7 @@ class GamePlay:
 
         self.objects = []
         self.n_objects = 0
-
+        self._del_objects_list = []
 
     def add_object(self):
         if self.player.isFire:
@@ -1083,7 +1216,18 @@ class GamePlay:
             )
             self.n_objects +=1
 
+
             self.player.isFire = False
+
+    def del_object(self, o):
+        del self.objects[o]
+        self.n_objects -= 1
+
+    def del_objects(self):
+        for o in set(self._del_objects_list):
+            self.del_object(o)
+        self._del_objects_list = []
+
 
 
     def camera_center(self):
@@ -1130,9 +1274,11 @@ class GamePlay:
         for o in range(self.n_objects):
             for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.objects[o].y))-1:int(np.rint(self.objects[o].y))+1+1, int(np.rint(self.objects[o].x))-1:int(np.rint(self.objects[o].x))+1+1] == 1):
                 self.objects[o].collision(self.map.blocks[int(np.rint(self.objects[o].y))+i-1, int(np.rint(self.objects[o].x))+j-1])
+                self._del_objects_list.append(o)
             if self.objects[o].collidesquare(self.mob):
                 self.mob.gui.hp_bar.hit_hp(self.objects[o].hp_changer)
-        
+                self._del_objects_list.append(o)
+
 
         if self.kill_zone.collidesquare(self.player):
             self.player.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
@@ -1165,6 +1311,7 @@ class GamePlay:
         self.player.event_handler(event)
         
     def render(self):
+        print(self.n_objects)
         self.camera_center()
         self.map.render()
         self.camera.render()
@@ -1177,10 +1324,10 @@ class GamePlay:
 
         self.player.render()
         self.cursor.render()
-        self.collide()
         self.add_object()
+        self.collide()
+        self.del_objects()
         self.camera.follow(self.player)
-        print(self.n_objects)
         
         
 
