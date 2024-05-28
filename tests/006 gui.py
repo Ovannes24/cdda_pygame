@@ -1185,7 +1185,16 @@ class GamePlay:
         self.screen_rect = screen_rect
         
         self.map = Map(screen=screen, screen_rect=screen_rect)
-        self.mob = Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
+
+        self.mobs = []
+        self.n_mobs = 1
+
+        for mob in range(self.n_mobs):
+            self.mobs.append(
+                Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
+            )
+        # self.mob = Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
+
         self.kill_zone = KillZone(x=8, y=8, screen=screen, screen_rect=screen_rect)
         self.heal_zone = HealZone(x=8, y=10, screen=screen, screen_rect=screen_rect)
         
@@ -1235,9 +1244,12 @@ class GamePlay:
             self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2)
             self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2)
         
+        for mob in range(self.n_mobs):
+            self.mobs[mob].gui.set_x(self.mobs[mob].gui.x - self.camera.gui.x + self.screen_rect.width/2)
+            self.mobs[mob].gui.set_y(self.mobs[mob].gui.y - self.camera.gui.y + self.screen_rect.height/2)
         # print('Mob', self.mob.gui.x, -self.camera.gui.x, self.screen_rect.width/2) 
-        self.mob.gui.set_x(self.mob.gui.x - self.camera.gui.x + self.screen_rect.width/2)
-        self.mob.gui.set_y(self.mob.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+        # self.mob.gui.set_x(self.mob.gui.x - self.camera.gui.x + self.screen_rect.width/2)
+        # self.mob.gui.set_y(self.mob.gui.y - self.camera.gui.y + self.screen_rect.height/2)
 
         self.kill_zone.gui.set_x(self.kill_zone.gui.x - self.camera.gui.x + self.screen_rect.width/2)
         self.kill_zone.gui.set_y(self.kill_zone.gui.y - self.camera.gui.y + self.screen_rect.height/2)
@@ -1263,8 +1275,13 @@ class GamePlay:
         # print(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1] == 1):
             self.player.collision(self.map.blocks[int(np.rint(self.player.y))+i-1, int(np.rint(self.player.x))+j-1])
-        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
-            self.mob.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
+        
+        for mob in range(self.n_mobs):
+          for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mobs[mob].y))-1:int(np.rint(self.mobs[mob].y))+1+1, int(np.rint(self.mobs[mob].x))-1:int(np.rint(self.mobs[mob].x))+1+1] == 1):
+            self.mobs[mob].collision(self.map.blocks[int(np.rint(self.mobs[mob].y))+i-1, int(np.rint(self.mobs[mob].x))+j-1])
+        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
+        #     self.mob.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
+        
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
             self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
@@ -1274,20 +1291,30 @@ class GamePlay:
             for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.objects[o].y))-1:int(np.rint(self.objects[o].y))+1+1, int(np.rint(self.objects[o].x))-1:int(np.rint(self.objects[o].x))+1+1] == 1):
                 self.objects[o].collision(self.map.blocks[int(np.rint(self.objects[o].y))+i-1, int(np.rint(self.objects[o].x))+j-1])
                 self._del_objects_list.append(o)
-            if self.objects[o].collidesquare(self.mob):
-                self.mob.gui.hp_bar.hit_hp(self.objects[o].hp_changer)
-                self._del_objects_list.append(o)
+            for mob in range(self.n_mobs):
+                if self.objects[o].collidesquare(self.mobs[mob]):
+                    self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
+                    # self.mob.gui.hp_bar.hit_hp(self.objects[o].hp_changer)
+                    self._del_objects_list.append(o)
 
 
         if self.kill_zone.collidesquare(self.player):
             self.player.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
-        if self.kill_zone.collidesquare(self.mob):
-            self.mob.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
+
+        for mob in range(self.n_mobs):  
+            if self.kill_zone.collidesquare(self.mobs[mob]):
+                self.mobs[mob].gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
+        # if self.kill_zone.collidesquare(self.mob):
+        #     self.mob.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
         
         if self.heal_zone.collidesquare(self.player):
             self.player.gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
-        if self.heal_zone.collidesquare(self.mob):
-            self.mob.gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
+
+        for mob in range(self.n_mobs):
+            if self.heal_zone.collidesquare(self.mobs[mob]):
+                self.mobs[mob].gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
+        # if self.heal_zone.collidesquare(self.mob):
+        #     self.mob.gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
         
 
 
@@ -1297,8 +1324,9 @@ class GamePlay:
     def event_handler(self, event):
         
         self.map.event_handler(event)
-
-        self.mob.event_handler(event)
+        for mob in range(self.n_mobs):
+            self.mobs[mob].event_handler(event)
+        # self.mob.event_handler(event)
         self.kill_zone.event_handler(event)
         self.heal_zone.event_handler(event)
 
@@ -1313,7 +1341,9 @@ class GamePlay:
         self.camera_center()
         self.map.render()
         self.camera.render()
-        self.mob.render()
+        for mob in range(self.n_mobs):
+            self.mobs[mob].render()
+        # self.mob.render()
         self.kill_zone.render()
         self.heal_zone.render()
         
