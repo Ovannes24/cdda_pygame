@@ -1164,16 +1164,22 @@ class Cursor(Square):
         self.set_x(self.x)
         self.set_y(self.y)
 
-        self.gui.set_x(self.x*self.gui.w)
-        self.gui.set_y(self.y*self.gui.h)
+        # self.gui.set_x(self.x*self.gui.w)
+        # self.gui.set_y(self.y*self.gui.h)
 
     def event_handler(self, event):
         self.gui.event_handler(event)
 
         if event.type == pg.MOUSEMOTION:
             # print(event)
-            self.set_x((event.pos[0] - self.gui.screen_rect.topleft[0])/self.gui.w)
-            self.set_y((event.pos[1] - self.gui.screen_rect.topleft[1])/self.gui.h)
+            # self.set_x((event.pos[0] - self.gui.screen_rect.topleft[0])/self.gui.w)
+            # self.set_y((event.pos[1] - self.gui.screen_rect.topleft[1])/self.gui.h)
+            self.set_x((event.pos[0] - self.gui.screen_rect.topleft[0] - self.gui.screen_rect.width/2)/self.gui.w)
+            self.set_y((event.pos[1] - self.gui.screen_rect.topleft[1] - self.gui.screen_rect.height/2)/self.gui.h)
+            self.gui.set_x((event.pos[0] - self.gui.screen_rect.topleft[0] + 0* self.gui.screen_rect.width/2))
+            self.gui.set_y((event.pos[1] - self.gui.screen_rect.topleft[1] + 0* self.gui.screen_rect.height/2))
+            
+
 
     def render(self):
         self.gui.render()
@@ -1187,7 +1193,7 @@ class GamePlay:
         self.map = Map(screen=screen, screen_rect=screen_rect)
 
         self.mobs = []
-        self.n_mobs = 1
+        self.n_mobs = 10
 
         for mob in range(self.n_mobs):
             self.mobs.append(
@@ -1217,13 +1223,13 @@ class GamePlay:
                     y=self.player.y, 
                     screen=self.screen, 
                     screen_rect=self.screen_rect,
-                    dx=(self.cursor.x - self.player.x) / 32,
-                    dy=(self.cursor.y - self.player.y) / 32,
-                    hp_changer=2
+                    dx=(self.cursor.gui.x - self.player.gui.x) / 1000,
+                    dy=(self.cursor.gui.y - self.player.gui.y) / 1000,
+                    hp_changer=50
                 )
             )
             self.n_objects +=1
-
+            print((self.cursor.x - self.player.x) / 32, (self.cursor.y - self.player.y) / 32)
 
             self.player.isFire = False
 
@@ -1292,10 +1298,11 @@ class GamePlay:
                 self.objects[o].collision(self.map.blocks[int(np.rint(self.objects[o].y))+i-1, int(np.rint(self.objects[o].x))+j-1])
                 self._del_objects_list.append(o)
             for mob in range(self.n_mobs):
-                if self.objects[o].collidesquare(self.mobs[mob]):
-                    self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
-                    # self.mob.gui.hp_bar.hit_hp(self.objects[o].hp_changer)
-                    self._del_objects_list.append(o)
+                if self.mobs[mob].isAlive:
+                    if self.objects[o].collidesquare(self.mobs[mob]):
+                        self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
+                        # self.mob.gui.hp_bar.hit_hp(self.objects[o].hp_changer)
+                        self._del_objects_list.append(o)
 
 
         if self.kill_zone.collidesquare(self.player):
@@ -1352,12 +1359,15 @@ class GamePlay:
 
         self.player.render()
         self.cursor.render()
-        self.player.isFire = True 
+        # self.player.isFire = True 
         self.add_object()
         self.collide()
-        print(self.n_objects, self._del_objects_list)
+        # print(self.n_objects, self._del_objects_list)
         self.del_objects()
         self.camera.follow(self.player)
+        # print(self.cursor.x, self.cursor.y)
+        # print(self.cursor.gui.x, self.cursor.gui.y)
+        print(f"{self.player.x:.2f} {self.player.y:.2f} {self.cursor.x:.2f} {self.cursor.y:.2f} {self.map.blocks[0, 0].gui.x:.2f} {self.map.blocks[0, 0].gui.y:.2f}")
         
         
 
