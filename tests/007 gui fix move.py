@@ -25,7 +25,7 @@ BLACK_BLUE = (0, 0, 64)
 
 COLORS = [RED, GREEN, BLUE]
 
-W, H = 1200, 900
+W, H = 1000, 900
 GAME_NAME = "GUI"
 CELL_SIZE = 32
 
@@ -34,26 +34,22 @@ FPS = 60
 MAP_SIZE = (16, 24)
 # block_floor_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
 block_floor_id = np.array([
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, ],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
 ])
 
 
@@ -825,8 +821,8 @@ class Block(Square):
         super().__del__()
 
     def move(self):
-        self.gui.set_x(self.x*self.gui.w)
-        self.gui.set_y(self.y*self.gui.h)
+        self.gui.set_x(self.x*32*self.gui.scale)
+        self.gui.set_y(self.y*32*self.gui.scale)
 
     def event_handler(self, event):
         self.gui.event_handler(event)
@@ -908,14 +904,14 @@ class Mob(Square):
             self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
             self.set_y(self.y+np.random.choice([-self.speed, self.speed]))
 
-            self.gui.set_x(self.x*self.gui.w)
-            self.gui.set_y(self.y*self.gui.h)
+            self.gui.set_x(self.x*32*self.gui.scale)
+            self.gui.set_y(self.y*32*self.gui.scale)
         else:
             self.set_x(self.x)
             self.set_y(self.y)
 
-            self.gui.set_x(self.x*self.gui.w)
-            self.gui.set_y(self.y*self.gui.h)
+            self.gui.set_x(self.x*32*self.gui.scale)
+            self.gui.set_y(self.y*32*self.gui.scale)
 
     def event_handler(self, event):
         self.gui.event_handler(event)
@@ -1043,8 +1039,8 @@ class KillZone(Mob):
         self.set_x(self.get_x())
         self.set_y(self.get_y())
 
-        self.gui.set_x(self.x*self.gui.w)
-        self.gui.set_y(self.y*self.gui.h)
+        self.gui.set_x(self.x*32*self.gui.scale)
+        self.gui.set_y(self.y*32*self.gui.scale)
 
 
     def render(self):
@@ -1068,8 +1064,8 @@ class HealZone(Mob):
         self.set_x(self.get_x())
         self.set_y(self.get_y())
 
-        self.gui.set_x(self.x*self.gui.w)
-        self.gui.set_y(self.y*self.gui.h)
+        self.gui.set_x(self.x*32*self.gui.scale)
+        self.gui.set_y(self.y*32*self.gui.scale)
 
 
     def render(self):
@@ -1092,8 +1088,8 @@ class Bullet(KillZone):
         self.set_x(self.get_x()+self.dx)
         self.set_y(self.get_y()+self.dy)
 
-        self.gui.set_x(self.x*self.gui.w)
-        self.gui.set_y(self.y*self.gui.h)
+        self.gui.set_x(self.x*32*game.gameplay.player.gui.scale)
+        self.gui.set_y(self.y*32*game.gameplay.player.gui.scale)
 
 
     def render(self):
@@ -1199,17 +1195,16 @@ class GamePlay:
             self.mobs.append(
                 Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
             )
-        # self.mob = Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
 
-        self.kill_zone = KillZone(x=8, y=8, screen=screen, screen_rect=screen_rect)
-        self.heal_zone = HealZone(x=8, y=10, screen=screen, screen_rect=screen_rect)
+
+        self.kill_zone = KillZone(x=8, y=8, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
+        self.heal_zone = HealZone(x=8, y=10, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
         
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
-        # self.player.gui.render_bc = True
+
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
         self.cursor = Cursor(x=1, y=1, screen=screen, screen_rect=screen_rect)
 
-        # self.camera.follow(self.player)
 
         self.objects = []
         self.n_objects = 0
@@ -1219,8 +1214,10 @@ class GamePlay:
         if self.player.isFire:
             self.objects.append(
                 Bullet(
-                    x=self.player.x, 
-                    y=self.player.y, 
+                    x=self.player.x , 
+                    y=self.player.y , 
+                    w=0.5*game.gameplay.player.gui.scale,
+                    h=0.5*game.gameplay.player.gui.scale,
                     screen=self.screen, 
                     screen_rect=self.screen_rect,
                     dx=(self.cursor.gui.x - self.player.gui.x) / 1000,
@@ -1229,7 +1226,7 @@ class GamePlay:
                 )
             )
             self.n_objects +=1
-            print((self.cursor.x - self.player.x) / 32, (self.cursor.y - self.player.y) / 32)
+            # print((self.cursor.x - self.player.x) / 32, (self.cursor.y - self.player.y) / 32)
 
             self.player.isFire = False
 
@@ -1242,8 +1239,6 @@ class GamePlay:
             self.del_object(o)
         self._del_objects_list = []
 
-
-
     def camera_center(self):
         # print('Blk', self.map.blocks[0, 0].gui.x,-self.camera.gui.x, self.screen_rect.width/2) 
         for i, j in self.map.not_nan:
@@ -1254,8 +1249,6 @@ class GamePlay:
             self.mobs[mob].gui.set_x(self.mobs[mob].gui.x - self.camera.gui.x + self.screen_rect.width/2)
             self.mobs[mob].gui.set_y(self.mobs[mob].gui.y - self.camera.gui.y + self.screen_rect.height/2)
         # print('Mob', self.mob.gui.x, -self.camera.gui.x, self.screen_rect.width/2) 
-        # self.mob.gui.set_x(self.mob.gui.x - self.camera.gui.x + self.screen_rect.width/2)
-        # self.mob.gui.set_y(self.mob.gui.y - self.camera.gui.y + self.screen_rect.height/2)
 
         self.kill_zone.gui.set_x(self.kill_zone.gui.x - self.camera.gui.x + self.screen_rect.width/2)
         self.kill_zone.gui.set_y(self.kill_zone.gui.y - self.camera.gui.y + self.screen_rect.height/2)
@@ -1285,9 +1278,8 @@ class GamePlay:
         for mob in range(self.n_mobs):
           for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mobs[mob].y))-1:int(np.rint(self.mobs[mob].y))+1+1, int(np.rint(self.mobs[mob].x))-1:int(np.rint(self.mobs[mob].x))+1+1] == 1):
             self.mobs[mob].collision(self.map.blocks[int(np.rint(self.mobs[mob].y))+i-1, int(np.rint(self.mobs[mob].x))+j-1])
-        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mob.y))-1:int(np.rint(self.mob.y))+1+1, int(np.rint(self.mob.x))-1:int(np.rint(self.mob.x))+1+1] == 1):
-        #     self.mob.collision(self.map.blocks[int(np.rint(self.mob.y))+i-1, int(np.rint(self.mob.x))+j-1])
-        
+
+
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
             self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
@@ -1301,7 +1293,6 @@ class GamePlay:
                 if self.mobs[mob].isAlive:
                     if self.objects[o].collidesquare(self.mobs[mob]):
                         self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
-                        # self.mob.gui.hp_bar.hit_hp(self.objects[o].hp_changer)
                         self._del_objects_list.append(o)
 
 
@@ -1311,8 +1302,6 @@ class GamePlay:
         for mob in range(self.n_mobs):  
             if self.kill_zone.collidesquare(self.mobs[mob]):
                 self.mobs[mob].gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
-        # if self.kill_zone.collidesquare(self.mob):
-        #     self.mob.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
         
         if self.heal_zone.collidesquare(self.player):
             self.player.gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
@@ -1333,7 +1322,7 @@ class GamePlay:
         self.map.event_handler(event)
         for mob in range(self.n_mobs):
             self.mobs[mob].event_handler(event)
-        # self.mob.event_handler(event)
+
         self.kill_zone.event_handler(event)
         self.heal_zone.event_handler(event)
 
@@ -1345,12 +1334,12 @@ class GamePlay:
         self.player.event_handler(event)
         
     def render(self):
-        self.camera_center()
+        # self.camera_center()
         self.map.render()
         self.camera.render()
         for mob in range(self.n_mobs):
             self.mobs[mob].render()
-        # self.mob.render()
+
         self.kill_zone.render()
         self.heal_zone.render()
         
@@ -1359,14 +1348,13 @@ class GamePlay:
 
         self.player.render()
         self.cursor.render()
-        # self.player.isFire = True 
+        self.player.isFire = True
         self.add_object()
         self.collide()
         # print(self.n_objects, self._del_objects_list)
         self.del_objects()
         self.camera.follow(self.player)
-        # print(self.cursor.x, self.cursor.y)
-        # print(self.cursor.gui.x, self.cursor.gui.y)
+        
         print(f"{self.player.x:.2f} {self.player.y:.2f} {self.cursor.x:.2f} {self.cursor.y:.2f} {self.map.blocks[0, 0].gui.x:.2f} {self.map.blocks[0, 0].gui.y:.2f}")
         
         
