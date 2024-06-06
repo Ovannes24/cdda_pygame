@@ -1,5 +1,6 @@
 import pygame as pg
 import numpy as np
+import pandas as pd
 
 import sys
 
@@ -34,22 +35,22 @@ FPS = 60
 MAP_SIZE = (16, 24)
 # block_floor_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
 block_floor_id = np.array([
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, ],
 ])
 
 
@@ -267,7 +268,7 @@ class BlockGUI(SquarePhysicalGUI):
         self.set_rect(self.surf)
 
     def __del__(self):
-        del self.self.texture_file
+        del self.texture_file
         super().__del__()
 
     def set_rect(self, surf):
@@ -831,14 +832,80 @@ class Block(Square):
         self.gui.render()
         self.move()
 
+class Chuncks:
+    def __init__(self) -> None:
+        self.block_floor_id = block_floor_id
+
+        self.xy_indexes = [
+            (0, 0),
+            (1, 0),
+            (0, 1),
+            (1, 1),
+            (0, -1),
+            (-1, -1),
+            
+            
+        ]
+
+        # self.blocks = pd.DataFrame(
+        #     [
+        #         [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+        #         [self.block_floor_id, self.block_floor_id.copy().astype(object)]
+        #     ],
+        #     columns=['v', 'o'],
+        #     index=pd.MultiIndex.from_tuples(self.xy_indexes, names=["x", "y"])
+        # )
+
+        self.blocks = dict(
+            zip(
+                self.xy_indexes, 
+                (
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    
+                    
+                    
+                )
+            )
+        )
+
+        self.collidable = self.get_collidable()
+
+    def get_not_nan(self):
+        # tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
+        tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
+        return np.r_[tuple([tmp_argwhere+np.array([i*16, j*16]) for i, j in self.xy_indexes])]
+
+    def get_collidable(self):
+        # tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
+        return np.r_[tuple([np.argwhere(self.blocks[(i,j)][0] == 1)+np.array([i*16, j*16]) for i, j in self.xy_indexes])]
+
+
+    def __getitem__(self, xy):
+        x, y = xy
+        # return self.blocks.loc[(x//16, y//16), 'o'][y % 16, x % 16]
+        return self.blocks[x//16, y//16][1][y % 16, x % 16]
+    
+    def __setitem__(self, xy, val):
+        x, y = xy
+        # self.blocks.loc[(x//16, y//16), 'o'][y % 16, x % 16] = val
+        self.blocks[x//16, y//16][1][y % 16, x % 16] = val
+    
+    
+
 class Map(Square):
     def __init__(self, x=0, y=0, w=MAP_SIZE[1], h=MAP_SIZE[0], screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h)
         self.block_floor_id = block_floor_id
 
-        self.blocks = self.block_floor_id.copy().astype(object)
 
-        self.not_nan = np.argwhere(self.block_floor_id != np.nan)
+        self.blocks = Chuncks()
+
+        self.not_nan = self.blocks.get_not_nan()
         for i, j in self.not_nan:
             self.blocks[i, j] = Block(
                 x=j,
@@ -847,15 +914,15 @@ class Map(Square):
                 h=1,
                 screen=screen, 
                 screen_rect=screen_rect,
-                id=self.block_floor_id[i, j] 
+                id=self.block_floor_id[i % 16, j % 16] 
             )
 
     def __del__(self):
-        del self.block_floor_id
-        for i, j in self.not_nan:
-            del self.blocks[i, j]
-        del self.blocks
-        del self.not_nan
+        # del self.block_floor_id
+        # for i, j in self.not_nan:
+        #     del self.chuncks[i, j]
+        # del self.chuncks
+        # del self.not_nan
         super().__del__()
 
 
@@ -1272,13 +1339,19 @@ class GamePlay:
         
     def collide(self):
         # print(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1])
-        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1] == 1):
-            self.player.collision(self.map.blocks[int(np.rint(self.player.y))+i-1, int(np.rint(self.player.x))+j-1])
+        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1] == 1):
+        #     self.player.collision(self.map.blocks[int(np.rint(self.player.y))+i-1, int(np.rint(self.player.x))+j-1])
         
-        for mob in range(self.n_mobs):
-          for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mobs[mob].y))-1:int(np.rint(self.mobs[mob].y))+1+1, int(np.rint(self.mobs[mob].x))-1:int(np.rint(self.mobs[mob].x))+1+1] == 1):
-            self.mobs[mob].collision(self.map.blocks[int(np.rint(self.mobs[mob].y))+i-1, int(np.rint(self.mobs[mob].x))+j-1])
 
+        # for mob in range(self.n_mobs):
+        #   for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mobs[mob].y))-1:int(np.rint(self.mobs[mob].y))+1+1, int(np.rint(self.mobs[mob].x))-1:int(np.rint(self.mobs[mob].x))+1+1] == 1):
+        #     self.mobs[mob].collision(self.map.blocks[int(np.rint(self.mobs[mob].y))+i-1, int(np.rint(self.mobs[mob].x))+j-1])
+
+        for i, j in self.map.blocks.collidable:
+            self.player.collision(self.map.blocks[i, j])
+
+            for mob in range(self.n_mobs):
+                self.mobs[mob].collision(self.map.blocks[i, j])
 
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
             self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
@@ -1348,7 +1421,7 @@ class GamePlay:
 
         self.player.render()
         self.cursor.render()
-        self.player.isFire = True
+        # self.player.isFire = True
         self.add_object()
         self.collide()
         # print(self.n_objects, self._del_objects_list)
