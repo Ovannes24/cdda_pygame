@@ -1347,6 +1347,18 @@ class GamePlay:
         #   for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mobs[mob].y))-1:int(np.rint(self.mobs[mob].y))+1+1, int(np.rint(self.mobs[mob].x))-1:int(np.rint(self.mobs[mob].x))+1+1] == 1):
         #     self.mobs[mob].collision(self.map.blocks[int(np.rint(self.mobs[mob].y))+i-1, int(np.rint(self.mobs[mob].x))+j-1])
 
+        # for i, j in [
+        #     (int(np.rint(self.player.y))-1, int(np.rint(self.player.x))-1),
+        #     (int(np.rint(self.player.y))-1, int(np.rint(self.player.x))+0),
+        #     (int(np.rint(self.player.y))-1, int(np.rint(self.player.x))+1),
+        #     (int(np.rint(self.player.y))+0, int(np.rint(self.player.x))-1),
+        #     (int(np.rint(self.player.y))+0, int(np.rint(self.player.x))+0),
+        #     (int(np.rint(self.player.y))+0, int(np.rint(self.player.x))+1),
+        #     (int(np.rint(self.player.y))+1, int(np.rint(self.player.x))-1),
+        #     (int(np.rint(self.player.y))+1, int(np.rint(self.player.x))+0),
+        #     (int(np.rint(self.player.y))+1, int(np.rint(self.player.x))+1),]:
+        #     self.player.collision(self.map.blocks[i, j])
+
         for i, j in self.map.blocks.collidable:
             self.player.collision(self.map.blocks[i, j])
 
