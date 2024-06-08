@@ -369,7 +369,9 @@ class TextureSquareGUI(SquarePhysicalGUI):
 
     def rotate_texture(self, angle):
         self.surf_origin = pg.transform.rotate(self.surf_origin, angle)
-        self.surf = self.surf_origin
+        # self.surf = self.surf_origin
+        self.surf = pg.transform.scale(self.surf_origin, (self.w+1, self.h+1))
+        
         self.set_rect(self.surf)
 
 class MobGUI(TextureSquareGUI):
@@ -842,7 +844,11 @@ class Chuncks:
             (0, 1),
             (1, 1),
             (0, -1),
+            (-1, 0),
             (-1, -1),
+            (1, -1),
+            (-1, 1),
+
             
             
         ]
@@ -866,7 +872,9 @@ class Chuncks:
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
                     
                 )
@@ -895,8 +903,6 @@ class Chuncks:
         # self.blocks.loc[(x//16, y//16), 'o'][y % 16, x % 16] = val
         self.blocks[x//16, y//16][1][y % 16, x % 16] = val
     
-    
-
 class Map(Square):
     def __init__(self, x=0, y=0, w=MAP_SIZE[1], h=MAP_SIZE[0], screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h)
@@ -1268,7 +1274,7 @@ class GamePlay:
         self.heal_zone = HealZone(x=8, y=10, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
         
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
-
+        self.player.speed = 0.37
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
         self.cursor = Cursor(x=1, y=1, screen=screen, screen_rect=screen_rect)
 
@@ -1359,28 +1365,43 @@ class GamePlay:
         #     (int(np.rint(self.player.y))+1, int(np.rint(self.player.x))+1),]:
         #     self.player.collision(self.map.blocks[i, j])
 
-        for i, j in self.map.blocks.collidable:
-            self.player.collision(self.map.blocks[i, j])
 
-            for mob in range(self.n_mobs):
-                self.mobs[mob].collision(self.map.blocks[i, j])
 
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
             self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
             self.heal_zone.collision(self.map.blocks[int(np.rint(self.heal_zone.y))+i-1, int(np.rint(self.heal_zone.x))+j-1])
 
+        # for o in range(self.n_objects):
+        #     for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.objects[o].y))-1:int(np.rint(self.objects[o].y))+1+1, int(np.rint(self.objects[o].x))-1:int(np.rint(self.objects[o].x))+1+1] == 1):
+        #         self.objects[o].collision(self.map.blocks[int(np.rint(self.objects[o].y))+i-1, int(np.rint(self.objects[o].x))+j-1])
+        #         self._del_objects_list.append(o)
+        #     for mob in range(self.n_mobs):
+        #         if self.mobs[mob].isAlive:
+        #             if self.objects[o].collidesquare(self.mobs[mob]):
+        #                 self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
+        #                 self._del_objects_list.append(o)
+
+        for i, j in self.map.blocks.collidable:
+            self.player.collision(self.map.blocks[i, j])
+
+            for mob in range(self.n_mobs):
+                self.mobs[mob].collision(self.map.blocks[i, j])
+
         for o in range(self.n_objects):
-            for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.objects[o].y))-1:int(np.rint(self.objects[o].y))+1+1, int(np.rint(self.objects[o].x))-1:int(np.rint(self.objects[o].x))+1+1] == 1):
-                self.objects[o].collision(self.map.blocks[int(np.rint(self.objects[o].y))+i-1, int(np.rint(self.objects[o].x))+j-1])
-                self._del_objects_list.append(o)
+            for i, j in self.map.blocks.collidable:
+                if self.objects[o].collidesquare(self.map.blocks[i, j]):
+                    self.objects[o].collision(self.map.blocks[i, j])
+                    self._del_objects_list.append(o)
+                
+        for o in range(self.n_objects):
             for mob in range(self.n_mobs):
                 if self.mobs[mob].isAlive:
                     if self.objects[o].collidesquare(self.mobs[mob]):
                         self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
                         self._del_objects_list.append(o)
 
-
+                
         if self.kill_zone.collidesquare(self.player):
             self.player.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
 
