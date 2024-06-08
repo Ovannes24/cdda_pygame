@@ -841,14 +841,16 @@ class Chuncks:
         self.xy_indexes = [
             (0, 0),
             (1, 0),
+            (2, 0),
             (0, 1),
             (1, 1),
-            (0, -1),
+            (2, 1),
+            (0, 2),
+            (1, 2),
+            (2, 2),
+            
             (-1, 0),
             (-1, -1),
-            (1, -1),
-            (-1, 1),
-
             
             
         ]
@@ -875,6 +877,8 @@ class Chuncks:
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
                     
                 )
@@ -882,6 +886,7 @@ class Chuncks:
         )
 
         self.collidable = self.get_collidable()
+        print(self.collidable)
 
     def get_not_nan(self):
         # tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
@@ -914,8 +919,8 @@ class Map(Square):
         self.not_nan = self.blocks.get_not_nan()
         for i, j in self.not_nan:
             self.blocks[i, j] = Block(
-                x=j,
-                y=i,
+                x=i,
+                y=j,
                 w=1,
                 h=1,
                 screen=screen, 
@@ -1274,7 +1279,7 @@ class GamePlay:
         self.heal_zone = HealZone(x=8, y=10, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
         
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
-        self.player.speed = 0.37
+        # self.player.speed = 0.37
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
         self.cursor = Cursor(x=1, y=1, screen=screen, screen_rect=screen_rect)
 
@@ -1382,14 +1387,42 @@ class GamePlay:
         #                 self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
         #                 self._del_objects_list.append(o)
 
-        for i, j in self.map.blocks.collidable:
-            self.player.collision(self.map.blocks[i, j])
 
-            for mob in range(self.n_mobs):
-                self.mobs[mob].collision(self.map.blocks[i, j])
+
+        # for i, j in self.map.blocks.collidable:
+        #     if self.player.collidesquare(self.map.blocks[i, j]):
+        #         self.player.collision(self.map.blocks[i, j])
+        
+        # for mob in range(self.n_mobs):
+        #     for i, j in self.map.blocks.collidable:
+        #         if self.mobs[mob].collidesquare(self.map.blocks[i, j]):
+        #             self.mobs[mob].collision(self.map.blocks[i, j])
+
+
+        # for o in range(self.n_objects):
+        #     for i, j in self.map.blocks.collidable:
+        #         if self.objects[o].collidesquare(self.map.blocks[i, j]):
+        #             self.objects[o].collision(self.map.blocks[i, j])
+        #             self._del_objects_list.append(o)
+
+        def get_closest_collidable_object(o, c):
+            mask = np.argsort(np.sum((o - c)**2, axis=1))[:2]
+            return o[mask]
+        
+        # print(get_closest_collidable_object(self.map.blocks.collidable, np.array([self.player.x, self.player.y])))
+        for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.player.x, self.player.y])):
+            if self.player.collidesquare(self.map.blocks[i, j]):
+                self.player.collision(self.map.blocks[i, j])
+        
+
+        for mob in range(self.n_mobs):
+            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.mobs[mob].x, self.mobs[mob].y])):
+                if self.mobs[mob].collidesquare(self.map.blocks[i, j]):
+                    self.mobs[mob].collision(self.map.blocks[i, j])
+
 
         for o in range(self.n_objects):
-            for i, j in self.map.blocks.collidable:
+            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.objects[o].x, self.objects[o].y])):
                 if self.objects[o].collidesquare(self.map.blocks[i, j]):
                     self.objects[o].collision(self.map.blocks[i, j])
                     self._del_objects_list.append(o)
@@ -1461,7 +1494,7 @@ class GamePlay:
         self.del_objects()
         self.camera.follow(self.player)
         
-        print(f"{self.player.x:.2f} {self.player.y:.2f} {self.cursor.x:.2f} {self.cursor.y:.2f} {self.map.blocks[0, 0].gui.x:.2f} {self.map.blocks[0, 0].gui.y:.2f}")
+        # print(f"{self.player.x:.2f} {self.player.y:.2f} {self.cursor.x:.2f} {self.cursor.y:.2f} {self.map.blocks[0, 0].gui.x:.2f} {self.map.blocks[0, 0].gui.y:.2f}")
         
         
 
