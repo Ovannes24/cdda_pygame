@@ -850,8 +850,27 @@ class Chuncks:
             (2, 2),
             
             (-1, 0),
+            (0, -1),
             (-1, -1),
+
+            (-3, -3),
+            (-3, -2),
+            (-3, -1),
+            (-3, 0),
+            (-3, 1),
+            (-3, 2),
+            (-3, 3),
+
+            (3, -3),
+            (3, -2),
+            (3, -1),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+            (3, 3),
             
+            
+
             
         ]
 
@@ -879,8 +898,26 @@ class Chuncks:
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    
+
+
                 )
             )
         )
@@ -938,12 +975,18 @@ class Map(Square):
 
 
     def event_handler(self, event):
-        for i, j in self.not_nan:
-            self.blocks[i, j].gui.event_handler(event)
+        vec_event_handler = np.vectorize(lambda i, j: self.blocks[i, j].gui.event_handler(event))
+        vec_event_handler(self.not_nan[:, 0], self.not_nan[:, 1])
+
+        # for i, j in self.not_nan:
+        #     self.blocks[i, j].gui.event_handler(event)
 
     def render(self):
-        for i, j in self.not_nan:
-            self.blocks[i, j].render()
+        vec_render = np.vectorize(lambda i, j: self.blocks[i, j].render())
+        vec_render(self.not_nan[:, 0], self.not_nan[:, 1])
+        
+        # for i, j in self.not_nan:
+        #     self.blocks[i, j].render()
 
 class Mob(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
@@ -1319,10 +1362,17 @@ class GamePlay:
 
     def camera_center(self):
         # print('Blk', self.map.blocks[0, 0].gui.x,-self.camera.gui.x, self.screen_rect.width/2) 
-        for i, j in self.map.not_nan:
-            self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2)
-            self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2)
         
+        # for i, j in self.map.not_nan:
+        #     self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2)
+        #     self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2)
+        
+        vec_camera_center_x_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2))
+        vec_camera_center_y_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2))
+        vec_camera_center_x_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
+        vec_camera_center_y_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
+        
+
         for mob in range(self.n_mobs):
             self.mobs[mob].gui.set_x(self.mobs[mob].gui.x - self.camera.gui.x + self.screen_rect.width/2)
             self.mobs[mob].gui.set_y(self.mobs[mob].gui.y - self.camera.gui.y + self.screen_rect.height/2)
