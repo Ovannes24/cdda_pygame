@@ -838,7 +838,7 @@ class Chuncks:
     def __init__(self) -> None:
         self.block_floor_id = block_floor_id
 
-        self.xy_indexes = [
+        self.yx_indexes = [
             (0, 0),
             (1, 0),
             (2, 0),
@@ -849,7 +849,7 @@ class Chuncks:
             (1, 2),
             (2, 2),
             
-            (-1, 0),
+            # (-1, 0),
             (0, -1),
             (-1, -1),
 
@@ -880,12 +880,12 @@ class Chuncks:
         #         [self.block_floor_id, self.block_floor_id.copy().astype(object)]
         #     ],
         #     columns=['v', 'o'],
-        #     index=pd.MultiIndex.from_tuples(self.xy_indexes, names=["x", "y"])
+        #     index=pd.MultiIndex.from_tuples(self.yx_indexes, names=["x", "y"])
         # )
 
         self.blocks = dict(
             zip(
-                self.xy_indexes, 
+                self.yx_indexes, 
                 (
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
@@ -896,7 +896,8 @@ class Chuncks:
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
@@ -928,22 +929,22 @@ class Chuncks:
     def get_not_nan(self):
         # tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
         tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
-        return np.r_[tuple([tmp_argwhere+np.array([i*16, j*16]) for i, j in self.xy_indexes])]
+        return np.r_[tuple([tmp_argwhere+np.array([i*16, j*16]) for i, j in self.yx_indexes])]
 
     def get_collidable(self):
         # tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
-        return np.r_[tuple([np.argwhere(self.blocks[(i,j)][0] == 1)+np.array([i*16, j*16]) for i, j in self.xy_indexes])]
+        return np.r_[tuple([np.argwhere(self.blocks[(i,j)][0] == 1)+np.array([i*16, j*16]) for i, j in self.yx_indexes])]
 
 
     def __getitem__(self, xy):
-        x, y = xy
+        y, x = xy
         # return self.blocks.loc[(x//16, y//16), 'o'][y % 16, x % 16]
-        return self.blocks[x//16, y//16][1][y % 16, x % 16]
+        return self.blocks[y//16, x//16][1][y % 16, x % 16]
     
     def __setitem__(self, xy, val):
-        x, y = xy
+        y, x = xy
         # self.blocks.loc[(x//16, y//16), 'o'][y % 16, x % 16] = val
-        self.blocks[x//16, y//16][1][y % 16, x % 16] = val
+        self.blocks[y//16, x//16][1][y % 16, x % 16] = val
     
 class Map(Square):
     def __init__(self, x=0, y=0, w=MAP_SIZE[1], h=MAP_SIZE[0], screen=None, screen_rect=None) -> None:
@@ -956,8 +957,8 @@ class Map(Square):
         self.not_nan = self.blocks.get_not_nan()
         for i, j in self.not_nan:
             self.blocks[i, j] = Block(
-                x=i,
-                y=j,
+                x=j,
+                y=i,
                 w=1,
                 h=1,
                 screen=screen, 
@@ -1462,19 +1463,19 @@ class GamePlay:
             return o[mask]
         
         # print(get_closest_collidable_object(self.map.blocks.collidable, np.array([self.player.x, self.player.y])))
-        for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.player.x, self.player.y])):
+        for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.player.y, self.player.x])):
             if self.player.collidesquare(self.map.blocks[i, j]):
                 self.player.collision(self.map.blocks[i, j])
         
 
         for mob in range(self.n_mobs):
-            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.mobs[mob].x, self.mobs[mob].y])):
+            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.mobs[mob].y, self.mobs[mob].x])):
                 if self.mobs[mob].collidesquare(self.map.blocks[i, j]):
                     self.mobs[mob].collision(self.map.blocks[i, j])
 
 
         for o in range(self.n_objects):
-            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.objects[o].x, self.objects[o].y])):
+            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.objects[o].y, self.objects[o].x])):
                 if self.objects[o].collidesquare(self.map.blocks[i, j]):
                     self.objects[o].collision(self.map.blocks[i, j])
                     self._del_objects_list.append(o)
