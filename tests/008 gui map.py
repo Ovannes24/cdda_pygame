@@ -46,11 +46,11 @@ block_floor_id = np.array([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, ],
 ])
 
 
@@ -853,21 +853,21 @@ class Chuncks:
             (0, -1),
             (-1, -1),
 
-            (-3, -3),
-            (-3, -2),
-            (-3, -1),
-            (-3, 0),
-            (-3, 1),
-            (-3, 2),
-            (-3, 3),
+            # (-3, -3),
+            # (-3, -2),
+            # (-3, -1),
+            # (-3, 0),
+            # (-3, 1),
+            # (-3, 2),
+            # (-3, 3),
 
-            (3, -3),
-            (3, -2),
-            (3, -1),
-            (3, 0),
-            (3, 1),
-            (3, 2),
-            (3, 3),
+            # (3, -3),
+            # (3, -2),
+            # (3, -1),
+            # (3, 0),
+            # (3, 1),
+            # (3, 2),
+            # (3, 3),
             
             
 
@@ -900,21 +900,21 @@ class Chuncks:
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     
 
 
@@ -1272,6 +1272,8 @@ class Cursor(Square):
             h=self.h*32,
             c=BLUE
         )
+
+        self.gui.scalable = False
     
     def __del__(self):
         super().__del__()
