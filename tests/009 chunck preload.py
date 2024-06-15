@@ -833,7 +833,7 @@ class Block(Square):
         self.gui.render()
         self.move()
 
-class Chuncks(Square):
+class Blocks(Square):
     def __init__(self, screen=None, screen_rect=None) -> None:
         self.block_floor_id = block_floor_id
         
@@ -850,27 +850,8 @@ class Chuncks(Square):
             (0, 2),
             (1, 2),
             (2, 2),
-            
-            # (-1, 0),
             (0, -1),
             (-1, -1),
-
-            # (-3, -3),
-            # (-3, -2),
-            # (-3, -1),
-            # (-3, 0),
-            # (-3, 1),
-            # (-3, 2),
-            # (-3, 3),
-
-            # (3, -3),
-            # (3, -2),
-            # (3, -1),
-            # (3, 0),
-            # (3, 1),
-            # (3, 2),
-            # (3, 3),
-
             
         ]
 
@@ -890,102 +871,112 @@ class Chuncks(Square):
                     
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                     [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    # [self.block_floor_id, self.block_floor_id.copy().astype(object)],
                 )
             )
         )
-
-        self.chuncks = {
-            (i, j): Square(
-                    x=j,
-                    y=i,
-                    w=16,
-                    h=16,
-                    screen=screen, 
-                    screen_rect=screen_rect,
-            ) for i, j in self.yx_indexes}
-
-        # for k, (i, j) in enumerate(self.yx_indexes):
-        #     self.chuncks[k]
-            
 
         self.collidable = self.get_collidable()
         print(self.collidable)
 
     def get_not_nan_blocks(self):
-        # tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
         tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
         return np.r_[tuple([tmp_argwhere+np.array([i*16, j*16]) for i, j in self.yx_indexes])]
 
 
     def get_collidable(self):
-        # tmp_argwhere = np.argwhere(self.blocks[(0,0)][1] != np.nan)
         return np.r_[tuple([np.argwhere(self.blocks[(i,j)][0] == 1)+np.array([i*16, j*16]) for i, j in self.yx_indexes])]
 
 
     def __getitem__(self, xy):
         y, x = xy
-        # return self.blocks.loc[(x//16, y//16), 'o'][y % 16, x % 16]
         return self.blocks[y//16, x//16][1][y % 16, x % 16]
     
     def __setitem__(self, xy, val):
         y, x = xy
-        # self.blocks.loc[(x//16, y//16), 'o'][y % 16, x % 16] = val
         self.blocks[y//16, x//16][1][y % 16, x % 16] = val
 
+class Chunck(Square):
+    def __init__(self, x=0, y=0, w=16, h=16, screen=None, screen_rect=None) -> None:
+        super().__init__(x, y, w, h, screen, screen_rect)
+
+        self.time = 1
+        self.speed = self.time * 0.1
+
+        self.set_topleft(self.x*16, self.y*16)
+
+        self.block_floor_id = block_floor_id
+        self.blocks = self.block_floor_id.copy().astype(object)
+
+        self.tmp_surf = pg.Surface((self.w*32, self.h*32))
+
+        self.yx_not_nan = np.argwhere(self.block_floor_id != np.nan)
+        for i, j in self.yx_not_nan:
+            self.blocks[i, j] = Block(
+                x=j+self.x*16,
+                y=i+self.y*16,
+                w=1,
+                h=1,
+                screen=screen, 
+                screen_rect=screen_rect,
+                id=self.block_floor_id[i, j] 
+            )
+
+            # self.tmp_surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
+            self.gui.surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
+        
+        self.gui.render_bc = False
+        self.gui.render_color = False
+        
+        # self.gui.set_screen(self.tmp_surf, self.tmp_surf.get_rect())
+
+
+
+    def __del__(self):
+        del self.time
+        del self.speed
+        super().__del__()
+
+    def get_not_nan_blocks(self):
+        return np.argwhere(self.block_floor_id != np.nan) + np.array([self.y, self.x])
+
+
     def move(self):
-        for i, j in self.yx_indexes:
-            self.chuncks[(i, j)].gui.set_x(self.chuncks[(i, j)].x*32*self.chuncks[(i, j)].gui.scale)
-            self.chuncks[(i, j)].gui.set_y(self.chuncks[(i, j)].y*32*self.chuncks[(i, j)].gui.scale)
+        self.gui.set_x(self.x*32*self.gui.scale)
+        self.gui.set_y(self.y*32*self.gui.scale)
 
     def event_handler(self, event):
-        for i, j in self.yx_indexes:
-            self.chuncks[(i, j)].gui.event_handler(event)
+        self.gui.event_handler(event)
 
     def render(self):
-        for i, j in self.yx_indexes:
-            self.chuncks[(i, j)].gui.render()
+        self.gui.render()
         self.move()
 
 class Map(Square):
     def __init__(self, x=0, y=0, w=MAP_SIZE[1], h=MAP_SIZE[0], screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
+
+        self.chuncks = [
+            Chunck(x=0, y=0, screen=screen, screen_rect=screen_rect),
+            Chunck(x=1, y=0, screen=screen, screen_rect=screen_rect),
+            Chunck(x=2, y=0, screen=screen, screen_rect=screen_rect),
+            Chunck(x=0, y=1, screen=screen, screen_rect=screen_rect),
+            Chunck(x=1, y=1, screen=screen, screen_rect=screen_rect),
+            Chunck(x=2, y=1, screen=screen, screen_rect=screen_rect),
+            Chunck(x=0, y=2, screen=screen, screen_rect=screen_rect),
+            Chunck(x=1, y=2, screen=screen, screen_rect=screen_rect),
+            Chunck(x=2, y=2, screen=screen, screen_rect=screen_rect),
+            
+        ]
+
+        self.not_nan = []
+        for i, c in enumerate(self.chuncks):
+            self.not_nan.append(c.get_not_nan_blocks())
+
+        self.not_nan = np.array(self.not_nan)
+
+        
         self.block_floor_id = block_floor_id
 
-        self.blocks = Chuncks(screen=screen, screen_rect=screen_rect)
-
-        self.not_nan = self.blocks.get_not_nan_blocks()
-        for i, j in self.not_nan:
-            self.blocks[i, j] = Block(
-                x=j,
-                y=i,
-                w=1,
-                h=1,
-                screen=screen, 
-                screen_rect=screen_rect,
-                id=self.block_floor_id[i % 16, j % 16] 
-            )
-
-            self.blocks.chuncks[(i//16,j//16)].gui.surf.blit(self.blocks[i, j].gui.surf, ((j % 16)*32 , (i % 16)*32))
-        # for p in self.blocks.yx_indexes:
-            
-        #     self.blocks.chuncks[p]
         
 
     def __del__(self):
@@ -998,22 +989,26 @@ class Map(Square):
 
 
     def event_handler(self, event):
+        for i, c in enumerate(self.chuncks):
+            c.event_handler(event)
         # vec_event_handler = np.vectorize(lambda i, j: self.blocks[i, j].gui.event_handler(event))
         # vec_event_handler(self.not_nan[:, 0], self.not_nan[:, 1])
 
-        self.blocks.event_handler(event)
+        # self.blocks.event_handler(event)
 
         # for i, j in self.not_nan:
         #     self.blocks[i, j].gui.event_handler(event)
 
     def render(self):
+        for i, c in enumerate(self.chuncks):
+            c.render()
         # vec_render = np.vectorize(lambda i, j: self.blocks[i, j].render())
         # vec_render(self.not_nan[:, 0], self.not_nan[:, 1])
         
         # for i, j in self.blocks.yx_indexes:
         #     # self.gui.screen.blit(self.blocks.chuncks[(i, j)].gui.surf, (i*16*32, j*16*32))
         #     self.blocks.chuncks[(i, j)].gui.render()
-        self.blocks.render()
+
         # for i, j in self.blocks.yx_indexes:
         #     self.blocks.chuncks[(i//16,j//16)].gui.render()
         # for i, j in self.not_nan:
@@ -1400,10 +1395,16 @@ class GamePlay:
         #     self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2)
         #     self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2)
         
-        vec_camera_center_x_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2))
-        vec_camera_center_y_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2))
-        vec_camera_center_x_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
-        vec_camera_center_y_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
+
+        for i, c in enumerate(self.map.chuncks):
+            c.gui.set_x(c.gui.x - self.camera.gui.x + self.screen_rect.width/2)
+            c.gui.set_y(c.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+            
+
+        # vec_camera_center_x_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2))
+        # vec_camera_center_y_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2))
+        # vec_camera_center_x_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
+        # vec_camera_center_y_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
         
 
         for mob in range(self.n_mobs):
@@ -1572,7 +1573,7 @@ class GamePlay:
         self.cursor.render()
         # self.player.isFire = True
         self.add_object()
-        self.collide()
+        # self.collide()
         # print(self.n_objects, self._del_objects_list)
         self.del_objects()
         self.camera.follow(self.player)
