@@ -43,12 +43,12 @@ block_floor_id = np.array([
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, ],
 ])
 
@@ -106,6 +106,9 @@ class SquareGUI:
         self.screen = screen
         self.screen_rect = screen_rect
 
+    def set_surf_origin(self, surf):
+        self.surf_origin = surf
+        self.surf = self.surf_origin
     def set_rect(self, surf):
         self.rect = surf.get_rect()
         self.rect.center = (self.x, self.y)
@@ -902,12 +905,12 @@ class Chunck(Square):
         self.time = 1
         self.speed = self.time * 0.1
 
-        self.set_topleft(self.x*16, self.y*16)
+        self.set_topleft(self.x*16-0.5, self.y*16-0.5)
 
         self.block_floor_id = block_floor_id
         self.blocks = self.block_floor_id.copy().astype(object)
 
-        self.tmp_surf = pg.Surface((self.w*32, self.h*32))
+        self.tmp_surf = pg.Surface((self.w*32, self.h*32)).convert_alpha()
 
         self.yx_not_nan = np.argwhere(self.block_floor_id != np.nan)
         for i, j in self.yx_not_nan:
@@ -921,14 +924,13 @@ class Chunck(Square):
                 id=self.block_floor_id[i, j] 
             )
 
-            # self.tmp_surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
-            self.gui.surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
+            self.tmp_surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
+            # self.gui.surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
         
         self.gui.render_bc = False
         self.gui.render_color = False
         
-        # self.gui.set_screen(self.tmp_surf, self.tmp_surf.get_rect())
-
+        self.gui.set_surf_origin(self.tmp_surf)
 
 
     def __del__(self):
@@ -946,6 +948,7 @@ class Chunck(Square):
 
     def event_handler(self, event):
         self.gui.event_handler(event)
+        # print(self.gui.zoom_in, self.gui.zoom_out, self.gui.zoom_reset)
 
     def render(self):
         self.gui.render()
@@ -956,15 +959,31 @@ class Map(Square):
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
 
         self.chuncks = [
+
+            Chunck(x=0, y=-3, screen=screen, screen_rect=screen_rect),
+            Chunck(x=1, y=-3, screen=screen, screen_rect=screen_rect),
+            Chunck(x=2, y=-3, screen=screen, screen_rect=screen_rect),
+            Chunck(x=0, y=-2, screen=screen, screen_rect=screen_rect),
+            Chunck(x=1, y=-2, screen=screen, screen_rect=screen_rect),
+            Chunck(x=2, y=-2, screen=screen, screen_rect=screen_rect),
+            Chunck(x=0, y=-1, screen=screen, screen_rect=screen_rect),
+            Chunck(x=1, y=-1, screen=screen, screen_rect=screen_rect),
+            Chunck(x=2, y=-1, screen=screen, screen_rect=screen_rect),
+
             Chunck(x=0, y=0, screen=screen, screen_rect=screen_rect),
             Chunck(x=1, y=0, screen=screen, screen_rect=screen_rect),
             Chunck(x=2, y=0, screen=screen, screen_rect=screen_rect),
+
             Chunck(x=0, y=1, screen=screen, screen_rect=screen_rect),
             Chunck(x=1, y=1, screen=screen, screen_rect=screen_rect),
             Chunck(x=2, y=1, screen=screen, screen_rect=screen_rect),
             Chunck(x=0, y=2, screen=screen, screen_rect=screen_rect),
             Chunck(x=1, y=2, screen=screen, screen_rect=screen_rect),
             Chunck(x=2, y=2, screen=screen, screen_rect=screen_rect),
+            Chunck(x=0, y=3, screen=screen, screen_rect=screen_rect),
+            Chunck(x=1, y=3, screen=screen, screen_rect=screen_rect),
+            Chunck(x=2, y=3, screen=screen, screen_rect=screen_rect),
+            
             
         ]
 
@@ -1543,6 +1562,7 @@ class GamePlay:
     def event_handler(self, event):
         
         self.map.event_handler(event)
+        
         for mob in range(self.n_mobs):
             self.mobs[mob].event_handler(event)
 
