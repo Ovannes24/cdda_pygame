@@ -965,8 +965,8 @@ class Map(Square):
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
 
         mx, my = np.meshgrid(
-            np.arange(-4, 4+1),
-            np.arange(-4, 4+1)
+            np.arange(-3, 3+1),
+            np.arange(-3, 3+1)
         )
         mx, my = mx.reshape(-1), my.reshape(-1)
         self.yx_indexes = np.array([my, mx]).T
@@ -1395,7 +1395,7 @@ class GamePlay:
         self.heal_zone = HealZone(x=8, y=10, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
         
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
-        # self.player.speed = 0.37
+        self.player.speed = 0.37
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
         self.cursor = Cursor(x=1, y=1, screen=screen, screen_rect=screen_rect)
 
@@ -1414,8 +1414,8 @@ class GamePlay:
                     h=0.5*game.gameplay.player.gui.scale,
                     screen=self.screen, 
                     screen_rect=self.screen_rect,
-                    dx=(self.cursor.gui.x - self.player.gui.x) / 1000,
-                    dy=(self.cursor.gui.y - self.player.gui.y) / 1000,
+                    dx=(self.cursor.gui.x - self.screen_rect.width/2) / 1000,
+                    dy=(self.cursor.gui.y - self.screen_rect.height/2) / 1000,
                     hp_changer=50
                 )
             )
