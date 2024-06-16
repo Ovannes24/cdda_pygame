@@ -905,7 +905,7 @@ class Chunck(Square):
         self.time = 1
         self.speed = self.time * 0.1
 
-        self.set_topleft(self.x*16-0.5, self.y*16-0.5)
+        self.set_topleft(self.x*16, self.y*16)
 
         self.block_floor_id = block_floor_id
         self.blocks = self.block_floor_id.copy().astype(object)
@@ -915,8 +915,8 @@ class Chunck(Square):
         self.yx_not_nan = np.argwhere(self.block_floor_id != np.nan)
         for i, j in self.yx_not_nan:
             self.blocks[i, j] = Block(
-                x=j+self.x*16,
-                y=i+self.y*16,
+                x=j+self.get_topleft()[0]+0.5,
+                y=i+self.get_topleft()[1]+0.5,
                 w=1,
                 h=1,
                 screen=screen, 
@@ -939,7 +939,11 @@ class Chunck(Square):
         super().__del__()
 
     def get_not_nan_blocks(self):
-        return np.argwhere(self.block_floor_id != np.nan) + np.array([self.y, self.x])
+        return np.argwhere(self.block_floor_id != np.nan) +  np.array([self.get_topleft()[1], self.get_topleft()[0]])
+
+    def get_collidable_blocks(self):
+        # print(np.argwhere(self.block_floor_id == 1) + np.array([self.y, self.x]))
+        return np.argwhere(self.block_floor_id == 1) + np.array([self.get_topleft()[1], self.get_topleft()[0]])
 
 
     def move(self):
@@ -958,42 +962,46 @@ class Map(Square):
     def __init__(self, x=0, y=0, w=MAP_SIZE[1], h=MAP_SIZE[0], screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
 
-        self.chuncks = [
-
-            Chunck(x=0, y=-3, screen=screen, screen_rect=screen_rect),
-            Chunck(x=1, y=-3, screen=screen, screen_rect=screen_rect),
-            Chunck(x=2, y=-3, screen=screen, screen_rect=screen_rect),
-            Chunck(x=0, y=-2, screen=screen, screen_rect=screen_rect),
-            Chunck(x=1, y=-2, screen=screen, screen_rect=screen_rect),
-            Chunck(x=2, y=-2, screen=screen, screen_rect=screen_rect),
-            Chunck(x=0, y=-1, screen=screen, screen_rect=screen_rect),
-            Chunck(x=1, y=-1, screen=screen, screen_rect=screen_rect),
-            Chunck(x=2, y=-1, screen=screen, screen_rect=screen_rect),
-
-            Chunck(x=0, y=0, screen=screen, screen_rect=screen_rect),
-            Chunck(x=1, y=0, screen=screen, screen_rect=screen_rect),
-            Chunck(x=2, y=0, screen=screen, screen_rect=screen_rect),
-
-            Chunck(x=0, y=1, screen=screen, screen_rect=screen_rect),
-            Chunck(x=1, y=1, screen=screen, screen_rect=screen_rect),
-            Chunck(x=2, y=1, screen=screen, screen_rect=screen_rect),
-            Chunck(x=0, y=2, screen=screen, screen_rect=screen_rect),
-            Chunck(x=1, y=2, screen=screen, screen_rect=screen_rect),
-            Chunck(x=2, y=2, screen=screen, screen_rect=screen_rect),
-            Chunck(x=0, y=3, screen=screen, screen_rect=screen_rect),
-            Chunck(x=1, y=3, screen=screen, screen_rect=screen_rect),
-            Chunck(x=2, y=3, screen=screen, screen_rect=screen_rect),
-            
-            
+        self.yx_indexes = [
+            (-3, 0),
+            (-3, 1),
+            (-3, 2),
+            (-2, 0),
+            (-2, 1),
+            (-2, 2),
+            (-1, 0),
+            (-1, 1),
+            (-1, 2),
+            (0 , 0),
+            (0 , 1),
+            (0 , 2),
+            (1 , 0),
+            (1 , 1),
+            (1 , 2),
+            (2 , 0),
+            (2 , 1),
+            (2 , 2),
+            (3 , 0),
+            (3 , 1),
+            (3 , 2),
         ]
+        self.chuncks = {
+            (i, j): Chunck(x=j, y=i, screen=screen, screen_rect=screen_rect) for i, j in self.yx_indexes
+        }
 
         self.not_nan = []
         for i, c in enumerate(self.chuncks):
-            self.not_nan.append(c.get_not_nan_blocks())
-
+            self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
         self.not_nan = np.array(self.not_nan)
 
-        
+        # self.collidable = []
+        # for i, c in enumerate(self.chuncks):
+        #     self.collidable.append(self.chuncks[c].get_collidable_blocks())
+        # self.collidable = np.r_[self.collidable]
+        # self.collidable = np.array(self.collidable)
+        self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+
+        # print(self.collidable)
         self.block_floor_id = block_floor_id
 
         
@@ -1006,10 +1014,17 @@ class Map(Square):
         # del self.not_nan
         super().__del__()
 
+    def __getitem__(self, xy):
+        y, x = xy
+        return self.chuncks[int(y//16), int(x//16)].blocks[int(y % 16), int(x % 16)]
+    
+    def __setitem__(self, xy, val):
+        y, x = xy
+        self.chuncks[int(y//16), int(x//16)].blocks[int(y % 16), int(x % 16)] = val
 
     def event_handler(self, event):
         for i, c in enumerate(self.chuncks):
-            c.event_handler(event)
+            self.chuncks[c].event_handler(event)
         # vec_event_handler = np.vectorize(lambda i, j: self.blocks[i, j].gui.event_handler(event))
         # vec_event_handler(self.not_nan[:, 0], self.not_nan[:, 1])
 
@@ -1020,7 +1035,7 @@ class Map(Square):
 
     def render(self):
         for i, c in enumerate(self.chuncks):
-            c.render()
+            self.chuncks[c].render()
         # vec_render = np.vectorize(lambda i, j: self.blocks[i, j].render())
         # vec_render(self.not_nan[:, 0], self.not_nan[:, 1])
         
@@ -1416,8 +1431,8 @@ class GamePlay:
         
 
         for i, c in enumerate(self.map.chuncks):
-            c.gui.set_x(c.gui.x - self.camera.gui.x + self.screen_rect.width/2)
-            c.gui.set_y(c.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+            self.map.chuncks[c].gui.set_x(self.map.chuncks[c].gui.x - self.camera.gui.x + self.screen_rect.width/2)
+            self.map.chuncks[c].gui.set_y(self.map.chuncks[c].gui.y - self.camera.gui.y + self.screen_rect.height/2)
             
 
         # vec_camera_center_x_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_x(self.map.blocks[i, j].gui.x - self.camera.gui.x + self.screen_rect.width/2))
@@ -1452,82 +1467,34 @@ class GamePlay:
         self.player.gui.set_y(self.screen_rect.height/2)
         
     def collide(self):
-        # print(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1])
-        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.player.y))-1:int(np.rint(self.player.y))+1+1, int(np.rint(self.player.x))-1:int(np.rint(self.player.x))+1+1] == 1):
-        #     self.player.collision(self.map.blocks[int(np.rint(self.player.y))+i-1, int(np.rint(self.player.x))+j-1])
-        
-
-        # for mob in range(self.n_mobs):
-        #   for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.mobs[mob].y))-1:int(np.rint(self.mobs[mob].y))+1+1, int(np.rint(self.mobs[mob].x))-1:int(np.rint(self.mobs[mob].x))+1+1] == 1):
-        #     self.mobs[mob].collision(self.map.blocks[int(np.rint(self.mobs[mob].y))+i-1, int(np.rint(self.mobs[mob].x))+j-1])
-
-        # for i, j in [
-        #     (int(np.rint(self.player.y))-1, int(np.rint(self.player.x))-1),
-        #     (int(np.rint(self.player.y))-1, int(np.rint(self.player.x))+0),
-        #     (int(np.rint(self.player.y))-1, int(np.rint(self.player.x))+1),
-        #     (int(np.rint(self.player.y))+0, int(np.rint(self.player.x))-1),
-        #     (int(np.rint(self.player.y))+0, int(np.rint(self.player.x))+0),
-        #     (int(np.rint(self.player.y))+0, int(np.rint(self.player.x))+1),
-        #     (int(np.rint(self.player.y))+1, int(np.rint(self.player.x))-1),
-        #     (int(np.rint(self.player.y))+1, int(np.rint(self.player.x))+0),
-        #     (int(np.rint(self.player.y))+1, int(np.rint(self.player.x))+1),]:
-        #     self.player.collision(self.map.blocks[i, j])
-
-
-
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
             self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
         for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
             self.heal_zone.collision(self.map.blocks[int(np.rint(self.heal_zone.y))+i-1, int(np.rint(self.heal_zone.x))+j-1])
 
-        # for o in range(self.n_objects):
-        #     for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.objects[o].y))-1:int(np.rint(self.objects[o].y))+1+1, int(np.rint(self.objects[o].x))-1:int(np.rint(self.objects[o].x))+1+1] == 1):
-        #         self.objects[o].collision(self.map.blocks[int(np.rint(self.objects[o].y))+i-1, int(np.rint(self.objects[o].x))+j-1])
-        #         self._del_objects_list.append(o)
-        #     for mob in range(self.n_mobs):
-        #         if self.mobs[mob].isAlive:
-        #             if self.objects[o].collidesquare(self.mobs[mob]):
-        #                 self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
-        #                 self._del_objects_list.append(o)
 
-
-
-        # for i, j in self.map.blocks.collidable:
-        #     if self.player.collidesquare(self.map.blocks[i, j]):
-        #         self.player.collision(self.map.blocks[i, j])
-        
-        # for mob in range(self.n_mobs):
-        #     for i, j in self.map.blocks.collidable:
-        #         if self.mobs[mob].collidesquare(self.map.blocks[i, j]):
-        #             self.mobs[mob].collision(self.map.blocks[i, j])
-
-
-        # for o in range(self.n_objects):
-        #     for i, j in self.map.blocks.collidable:
-        #         if self.objects[o].collidesquare(self.map.blocks[i, j]):
-        #             self.objects[o].collision(self.map.blocks[i, j])
-        #             self._del_objects_list.append(o)
 
         def get_closest_collidable_object(o, c):
-            mask = np.argsort(np.sum((o - c)**2, axis=1))[:2]
+            mask = np.argsort(np.sum((o - c)**2, axis=1))[:4]
             return o[mask]
         
         # print(get_closest_collidable_object(self.map.blocks.collidable, np.array([self.player.x, self.player.y])))
-        for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.player.y, self.player.x])):
-            if self.player.collidesquare(self.map.blocks[i, j]):
-                self.player.collision(self.map.blocks[i, j])
+        for i, j in get_closest_collidable_object(self.map.collidable, np.array([self.player.y, self.player.x])):
+            # print(self.player.y, self.player.x, self.map[i, j].x, self.map[i, j].y)
+            if self.player.collidesquare(self.map[i, j]):
+                self.player.collision(self.map[i, j])
         
 
         for mob in range(self.n_mobs):
-            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.mobs[mob].y, self.mobs[mob].x])):
-                if self.mobs[mob].collidesquare(self.map.blocks[i, j]):
-                    self.mobs[mob].collision(self.map.blocks[i, j])
+            for i, j in get_closest_collidable_object(self.map.collidable, np.array([self.mobs[mob].y, self.mobs[mob].x])):
+                if self.mobs[mob].collidesquare(self.map[i, j]):
+                    self.mobs[mob].collision(self.map[i, j])
 
 
         for o in range(self.n_objects):
-            for i, j in get_closest_collidable_object(self.map.blocks.collidable, np.array([self.objects[o].y, self.objects[o].x])):
-                if self.objects[o].collidesquare(self.map.blocks[i, j]):
-                    self.objects[o].collision(self.map.blocks[i, j])
+            for i, j in get_closest_collidable_object(self.map.collidable, np.array([self.objects[o].y, self.objects[o].x])):
+                if self.objects[o].collidesquare(self.map[i, j]):
+                    self.objects[o].collision(self.map[i, j])
                     self._del_objects_list.append(o)
                 
         for o in range(self.n_objects):
@@ -1551,12 +1518,7 @@ class GamePlay:
         for mob in range(self.n_mobs):
             if self.heal_zone.collidesquare(self.mobs[mob]):
                 self.mobs[mob].gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
-        # if self.heal_zone.collidesquare(self.mob):
-        #     self.mob.gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
-        
 
-
-        # self.player.collision(self.mob)
         
 
     def event_handler(self, event):
@@ -1593,7 +1555,7 @@ class GamePlay:
         self.cursor.render()
         # self.player.isFire = True
         self.add_object()
-        # self.collide()
+        self.collide()
         # print(self.n_objects, self._del_objects_list)
         self.del_objects()
         self.camera.follow(self.player)
