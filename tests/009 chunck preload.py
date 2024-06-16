@@ -812,8 +812,8 @@ class Block(Square):
             screen_rect=screen_rect,
             x=x*32,
             y=y*32,
-            w=32,
-            h=32,
+            w=w*32,
+            h=h*32,
             c=[BLUE, RED][self.id],
             texture_file=['./tiles/grass.png', './tiles/block.png'][self.id]
         )
@@ -898,7 +898,7 @@ class Blocks(Square):
         y, x = xy
         self.blocks[y//16, x//16][1][y % 16, x % 16] = val
 
-class Chunck(Square):
+class Chunck(Block):
     def __init__(self, x=0, y=0, w=16, h=16, screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
 
@@ -915,8 +915,8 @@ class Chunck(Square):
         self.yx_not_nan = np.argwhere(self.block_floor_id != np.nan)
         for i, j in self.yx_not_nan:
             self.blocks[i, j] = Block(
-                x=j+self.get_topleft()[0]+0.5,
-                y=i+self.get_topleft()[1]+0.5,
+                x=j+self.get_topleft()[0],
+                y=i+self.get_topleft()[1],
                 w=1,
                 h=1,
                 screen=screen, 
@@ -931,6 +931,8 @@ class Chunck(Square):
         self.gui.render_color = False
         
         self.gui.set_surf_origin(self.tmp_surf)
+        self.gui.zoom_reset = True
+        self.gui.zoom()
 
 
     def __del__(self):
@@ -947,8 +949,8 @@ class Chunck(Square):
 
 
     def move(self):
-        self.gui.set_x(self.x*32*self.gui.scale)
-        self.gui.set_y(self.y*32*self.gui.scale)
+        self.gui.set_x((self.x-0.5)*32*self.gui.scale)
+        self.gui.set_y((self.y-0.5)*32*self.gui.scale)
 
     def event_handler(self, event):
         self.gui.event_handler(event)
@@ -962,29 +964,38 @@ class Map(Square):
     def __init__(self, x=0, y=0, w=MAP_SIZE[1], h=MAP_SIZE[0], screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
 
-        self.yx_indexes = [
-            (-3, 0),
-            (-3, 1),
-            (-3, 2),
-            (-2, 0),
-            (-2, 1),
-            (-2, 2),
-            (-1, 0),
-            (-1, 1),
-            (-1, 2),
-            (0 , 0),
-            (0 , 1),
-            (0 , 2),
-            (1 , 0),
-            (1 , 1),
-            (1 , 2),
-            (2 , 0),
-            (2 , 1),
-            (2 , 2),
-            (3 , 0),
-            (3 , 1),
-            (3 , 2),
-        ]
+        mx, my = np.meshgrid(
+            np.arange(-4, 4+1),
+            np.arange(-4, 4+1)
+        )
+        mx, my = mx.reshape(-1), my.reshape(-1)
+        self.yx_indexes = np.array([my, mx]).T
+
+        # self.yx_indexes = [
+        #     (-3, 0),
+        #     (-3, 1),
+        #     (-3, 2),
+        #     (-2, 0),
+        #     (-2, 1),
+        #     (-2, 2),
+        #     (-1, 0),
+        #     (-1, 1),
+        #     (-1, 2),
+        #     (0 , 0),
+        #     (0 , 1),
+        #     (0 , 2),
+        #     (1 , 0),
+        #     (1 , 1),
+        #     (1 , 2),
+        #     (2 , 0),
+        #     (2 , 1),
+        #     (2 , 2),
+        #     (3 , 0),
+        #     (3 , 1),
+        #     (3 , 2),
+        # ]
+
+
         self.chuncks = {
             (i, j): Chunck(x=j, y=i, screen=screen, screen_rect=screen_rect) for i, j in self.yx_indexes
         }
