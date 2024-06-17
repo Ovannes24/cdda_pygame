@@ -31,6 +31,9 @@ CELL_SIZE = 32
 
 FPS = 60
 
+FONT = None
+FONT_SIZE = 20
+
 MAP_SIZE = (16, 24)
 # block_floor_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
 block_floor_id = np.array([
@@ -455,31 +458,48 @@ class CursorGUI(TextureSquareGUI):
         super().__del__()
 
 class Button(SquareGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=RED, text='+', **kwargs) -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=RED, text='', active_f=lambda : ... , **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
+        
+        self.active_f = active_f
+    
         self.clicked = False
+        self.motionable = True
+
+        self.btn_color = self.c
+
+        self.text = text
+        self.font = pg.font.Font(FONT, FONT_SIZE)
+        self.surf_font = self.font.render(self.text, True, WHITE)
+        self.rect_font = self.surf_font.get_rect()
+        self.rect_font.center = (self.w/2, self.h/2)
 
     def __del__(self):
         del self.clicked
+        del self.motionable
         super().__del__()
 
     def event_handler(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
-            if self.rect.collidepoint(event.pos):
+            if self.rect.collidepoint(pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft)):
                 self.clicked = True
                 self.c = GREEN
         elif event.type == pg.MOUSEBUTTONUP:
             self.clicked = False
-            self.c = RED
-        elif event.type == pg.MOUSEMOTION and self.clicked:
-            self.set_x(self.x + event.rel[0])
-            self.set_y(self.y + event.rel[1])
-            
-            # self.rect.move_ip(event.rel)
+            self.c = self.btn_color
+        if self.clicked:
+            if event.type == pg.MOUSEMOTION and self.motionable:
+                self.set_x(self.x + event.rel[0])
+                self.set_y(self.y + event.rel[1])
+                
+                # self.rect.move_ip(event.rel)
+            self.active_f()
 
     def render(self):
         self.screen.blit(self.surf, self.rect)
         self.surf.fill(self.c)
+
+        self.surf.blit(self.surf_font, self.rect_font)
         super().render()
 
 class MapGUI(SquarePhysicalGUI):
@@ -583,6 +603,34 @@ class WindowMap(Window):
     def render(self):
         super().render()
         # self.map.render()
+
+class WindowSetting(Window):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, objects)
+
+        self.btn1 = Button(
+            screen=self.surf,
+            screen_rect=self.rect, 
+            x=self.w/2, 
+            y=20, 
+            w=self.w-20, 
+            h=25, 
+            c=BLACK,
+            text='EXIT',
+            active_f=lambda : game.set_running(False)
+        )
+        self.btn1.motionable = False
+
+    def __del__(self):
+        super().__del__()
+
+    def event_handler(self, event):
+        super().event_handler(event)
+        self.btn1.event_handler(event)
+    
+    def render(self):
+        super().render()
+        self.btn1.render()
 
 class Camera(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
@@ -1395,7 +1443,9 @@ class GamePlay:
         self.heal_zone = HealZone(x=8, y=10, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
         
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
-        self.player.speed = 0.37
+        # self.player.speed = 0.37
+        self.player.speed = 0.27
+        
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
         self.cursor = Cursor(x=1, y=1, screen=screen, screen_rect=screen_rect)
 
@@ -1408,8 +1458,8 @@ class GamePlay:
         if self.player.isFire:
             self.objects.append(
                 Bullet(
-                    x=self.player.x , 
-                    y=self.player.y , 
+                    x=self.player.x, 
+                    y=self.player.y, 
                     w=0.5*game.gameplay.player.gui.scale,
                     h=0.5*game.gameplay.player.gui.scale,
                     screen=self.screen, 
@@ -1572,8 +1622,7 @@ class GamePlay:
         self.camera.follow(self.player)
         
         # print(f"{self.player.x:.2f} {self.player.y:.2f} {self.cursor.x:.2f} {self.cursor.y:.2f} {self.map.blocks[0, 0].gui.x:.2f} {self.map.blocks[0, 0].gui.y:.2f}")
-        
-        
+
 
 class Game:
     def __init__(self) -> None:
@@ -1606,16 +1655,34 @@ class Game:
             objects=[]
         )
 
+        self.window_setting = WindowSetting(
+            self.screen, 
+            self.screen_rect, 
+            x=self.screen_rect.centerx-450,
+            y=self.screen_rect.centery,
+            w=200,
+            h=400,
+            c=BLACK,
+            alpha=255,
+            objects=[]
+        )
+
+        
+
         self.gameplay = GamePlay(self.window_map.surf, self.window_map.rect)
 
+    def set_running(self, b):
+        self.running = b
 
     def event_handler(self, event):
         self.window_map.event_handler(event)
+        self.window_setting.event_handler(event)
         self.gameplay.event_handler(event)
 
     def render(self):
         self.screen.fill(BLACK)
         self.window_map.render()
+        self.window_setting.render()
         self.gameplay.render()
         
 
