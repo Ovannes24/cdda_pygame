@@ -261,11 +261,11 @@ class SquarePhysicalGUI(SquareGUI):
         if event.type == pg.KEYUP:
             if event.key == pg.K_LSHIFT:
                 self.shifted = False
-        # if event.type == pg.MOUSEWHEEL:
-        #     if event.y <= 0:
-        #         self.zoom_in = True
-        #     else:
-        #         self.zoom_out = True
+        if event.type == pg.MOUSEWHEEL:
+            if event.y <= 0:
+                self.zoom_in = True
+            else:
+                self.zoom_out = True
 
     def render(self):
         super().render()
@@ -1027,6 +1027,9 @@ class Map(Square):
         )
         mx, my = mx.reshape(-1), my.reshape(-1)
         self.yx_indexes = np.array([my, mx]).T
+        self.add_indexes = np.array([])
+        self.del_indexes = np.array([])
+        self.chunck_load = False
 
         # self.yx_indexes = [
         #     (-3, 0),
@@ -1072,38 +1075,6 @@ class Map(Square):
         # print(self.collidable)
         self.block_floor_id = block_floor_id
 
-
-    def del_chunck(self, yx_index):
-        print('delete chunck', yx_index)
-        # print(self.yx_indexes)
-        # print(np.argwhere(np.all(yx_index == self.yx_indexes, axis=1))[0])
-        self.yx_indexes = np.delete(self.yx_indexes, np.argwhere(np.all(yx_index == self.yx_indexes, axis=1))[0], axis=0)
-        # self.yx_indexes.pop(np.argwhere(tuple(yx_index) == self.yx_indexes))
-        # print(self.yx_indexes[-1])
-        del self.chuncks[tuple(yx_index)]
-        self.not_nan = []
-        for i, c in enumerate(self.chuncks):
-            self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
-        self.not_nan = np.array(self.not_nan)
-        self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
-
-    def add_chunck(self, yx_index):
-        print('add chunck', yx_index)
-        self.yx_indexes = np.append(self.yx_indexes, [yx_index], axis=0)
-        i, j = yx_index
-        self.chuncks[(i, j)] = Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect)
-        
-        self.not_nan = []
-        for i, c in enumerate(self.chuncks):
-            self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
-        self.not_nan = np.array(self.not_nan)
-        self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
-
-
-
-
-
-
     def __del__(self):
         # del self.block_floor_id
         # for i, j in self.not_nan:
@@ -1111,6 +1082,97 @@ class Map(Square):
         # del self.chuncks
         # del self.not_nan
         super().__del__()
+
+
+    def check_chunck_render(self):
+        if game.gameplay.player.chunck_pos != game.gameplay.player.get_chunck_pos_yx():
+            past_player_chunck_pos = game.gameplay.player.chunck_pos
+            game.gameplay.player.chunck_pos = game.gameplay.player.get_chunck_pos_yx()
+            print('player change chunck,', game.gameplay.player.chunck_pos)
+            
+            tmp_index = np.r_[
+                self.yx_indexes, 
+                self.yx_indexes+(np.array(game.gameplay.player.chunck_pos) - past_player_chunck_pos), 
+                self.yx_indexes+(np.array(game.gameplay.player.chunck_pos) - past_player_chunck_pos)
+            ]
+
+            tmp_index, _, counts = np.unique(tmp_index, return_counts=True, return_index=True, axis=0)
+
+            self.add_indexes = tmp_index[counts == 2]
+            self.del_indexes = tmp_index[counts == 1]
+
+            self.chunck_load = True
+            # for i in self.del_indexes:
+            #     self.del_chunck(tuple(i))
+            # for i in self.add_indexes:
+            #     self.add_chunck(tuple(i))
+            
+
+        if len(self.del_indexes) != 0:
+            self.del_chunck(self.del_indexes[0])
+            self.del_indexes = self.del_indexes[1:]
+            self.add_chunck(self.add_indexes[0])
+            self.add_indexes = self.add_indexes[1:]
+
+            # vec_del_indexes = np.vectorize(lambda i, j: self.del_chunck((i, j)))
+            # vec_del_indexes(del_indexes[:, 0], del_indexes[:, 1])
+            # vec_add_chunck = np.vectorize(lambda i, j: self.add_chunck((i, j)))
+            # vec_add_chunck(add_indexes[:, 0], add_indexes[:, 1])
+        
+            # if len(self.del_indexes) == 0 and self.chunck_load:
+            self.not_nan = []
+            for i, c in enumerate(self.chuncks):
+                self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+            self.not_nan = np.array(self.not_nan)
+            self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+            self.chunck_load = False
+
+
+
+    def del_chunck(self, yx_index):
+        # need to optim
+        # print('delete chunck', yx_index)
+        # print(self.yx_indexes)
+        # print(np.argwhere(np.all(yx_index == self.yx_indexes, axis=1))[0])
+        self.yx_indexes = np.delete(self.yx_indexes, np.argwhere(np.all(yx_index == self.yx_indexes, axis=1))[0], axis=0)
+        # self.yx_indexes.pop(np.argwhere(tuple(yx_index) == self.yx_indexes))
+        # print(self.yx_indexes[-1])
+        del self.chuncks[tuple(yx_index)]
+
+
+        # need to change code pos
+        # self.not_nan = []
+        # for i, c in enumerate(self.chuncks):
+        #     self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+        # self.not_nan = np.array(self.not_nan)
+        # self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+
+    def add_chunck(self, yx_index):
+        # scale not work 
+        # print('add chunck', yx_index)
+        self.yx_indexes = np.append(self.yx_indexes, [yx_index], axis=0)
+        i, j = yx_index
+        self.chuncks[(i, j)] = Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect)
+        # self.chuncks[(i, j)].gui.scale = self.gui.scale
+        # self.chuncks[(i, j)].gui.relative_scale(self.chuncks[(i, j)].gui.scale, self.chuncks[(i, j)].gui.screen_rect.width//2, self.chuncks[(i, j)].gui.screen_rect.height//2)
+        # self.chuncks[(i, j)].gui.scale = self.gui.scale
+        # self.chuncks[(i, j)].gui.zoom_reset = True
+        # self.chuncks[(i, j)].gui.zoom()
+        self.chuncks[(i, j)].move()
+
+
+        # need to change code pos
+        # self.not_nan = []
+        # for i, c in enumerate(self.chuncks):
+        #     self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+        # self.not_nan = np.array(self.not_nan)
+        # self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+
+
+
+
+
+
 
     def __getitem__(self, xy):
         y, x = xy
@@ -1138,8 +1200,10 @@ class Map(Square):
         #     self.blocks[i, j].gui.event_handler(event)
 
     def render(self):
+        self.check_chunck_render()
         for i, c in enumerate(self.chuncks):
             self.chuncks[c].render()
+        
         # vec_render = np.vectorize(lambda i, j: self.blocks[i, j].render())
         # vec_render(self.not_nan[:, 0], self.not_nan[:, 1])
         
@@ -1185,6 +1249,9 @@ class Mob(Square):
         del self.isAlive
         super().__del__()
 
+    def get_chunck_pos_yx(self):
+        return int(self.y//16), int(self.x//16)
+
     def dead_handler(self):
         if self.isAlive:
             if self.gui.hp_bar.hp <= 0:
@@ -1222,6 +1289,8 @@ class Player(Mob):
 
         self.speed = self.time*0.1
 
+        self.chunck_pos = self.get_chunck_pos_yx()
+
         self.x_rel = 0
         self.y_rel = 0
 
@@ -1235,6 +1304,7 @@ class Player(Mob):
         self.isFire = False
 
     def __del__(self):
+        del self.chunck_pos
         del self.x_rel
         del self.y_rel
         del self.up_pressed
