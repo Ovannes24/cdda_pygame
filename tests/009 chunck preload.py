@@ -194,6 +194,8 @@ class SquarePhysicalGUI(SquareGUI):
         self.zoom_out = False
         self.zoom_reset = False
         
+        self.shifted = False
+
         self.scalable = True
 
         self.set_time(self.scale)
@@ -234,10 +236,10 @@ class SquarePhysicalGUI(SquareGUI):
         if self.scalable:
             if self.zoom_in:
                 self.zoom_in = False
-                self.relative_scale(0.91, self.screen_rect.width//2, self.screen_rect.height//2)
+                self.relative_scale(0.81, self.screen_rect.width//2, self.screen_rect.height//2)
             if self.zoom_out:
                 self.zoom_out = False
-                self.relative_scale(1/0.91, self.screen_rect.width//2, self.screen_rect.height//2)
+                self.relative_scale(1/0.81, self.screen_rect.width//2, self.screen_rect.height//2)
             if self.zoom_reset:
                 self.zoom_reset = False
                 self.relative_scale(1/self.scale, self.screen_rect.width//2, self.screen_rect.height//2)
@@ -246,17 +248,24 @@ class SquarePhysicalGUI(SquareGUI):
         super().event_handler(event)
 
         if event.type == pg.KEYDOWN:
-            if event.key == pg.K_z:
-                self.zoom_in = True
-            if event.key == pg.K_x:
-                self.zoom_out = True
+            if event.key == pg.K_LSHIFT:
+                self.shifted = True
+            if self.shifted:
+                if event.key == pg.K_z:
+                    self.zoom_in = True
+            else:
+                if event.key == pg.K_z:
+                    self.zoom_out = True
             if event.key == pg.K_c:
                 self.zoom_reset = True
-        if event.type == pg.MOUSEWHEEL:
-            if event.y <= 0:
-                self.zoom_in = True
-            else:
-                self.zoom_out = True
+        if event.type == pg.KEYUP:
+            if event.key == pg.K_LSHIFT:
+                self.shifted = False
+        # if event.type == pg.MOUSEWHEEL:
+        #     if event.y <= 0:
+        #         self.zoom_in = True
+        #     else:
+        #         self.zoom_out = True
 
     def render(self):
         super().render()
@@ -869,8 +878,8 @@ class Block(Square):
     def __del__(self):
         del self.id
         del self.collidable
-        del self.time
-        del self.speed
+        # del self.time
+        # del self.speed
         super().__del__()
 
     def move(self):
@@ -1063,7 +1072,22 @@ class Map(Square):
         # print(self.collidable)
         self.block_floor_id = block_floor_id
 
-        
+
+    def del_chunck(self, yx_index):
+        print('delete chunck', yx_index)
+        # print(self.yx_indexes)
+        # print(np.argwhere(np.all(yx_index == self.yx_indexes, axis=1))[0])
+        self.yx_indexes = np.delete(self.yx_indexes, np.argwhere(np.all(yx_index == self.yx_indexes, axis=1))[0], axis=0)
+        # self.yx_indexes.pop(np.argwhere(tuple(yx_index) == self.yx_indexes))
+        # print(self.yx_indexes[-1])
+        del self.chuncks[tuple(yx_index)]
+        self.not_nan = []
+        for i, c in enumerate(self.chuncks):
+            self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+        self.not_nan = np.array(self.not_nan)
+        self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+
+
 
     def __del__(self):
         # del self.block_floor_id
@@ -1084,6 +1108,9 @@ class Map(Square):
     def event_handler(self, event):
         for i, c in enumerate(self.chuncks):
             self.chuncks[c].event_handler(event)
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_p:
+                self.del_chunck(self.yx_indexes[-1])
         # vec_event_handler = np.vectorize(lambda i, j: self.blocks[i, j].gui.event_handler(event))
         # vec_event_handler(self.not_nan[:, 0], self.not_nan[:, 1])
 
@@ -1106,6 +1133,13 @@ class Map(Square):
         #     self.blocks.chuncks[(i//16,j//16)].gui.render()
         # for i, j in self.not_nan:
         #     self.blocks[i, j].render()
+
+class Inventory:
+    def __init__(self) -> None:
+        self.objects = []
+    
+    def add_items(self, items):
+        self.objects += items
 
 class Mob(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
