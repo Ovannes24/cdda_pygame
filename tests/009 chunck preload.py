@@ -37,22 +37,22 @@ FONT_SIZE = 20
 MAP_SIZE = (16, 24)
 # block_floor_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
 block_floor_id = np.array([
-    [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+    [0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, ],
 ])
 
 
@@ -970,7 +970,22 @@ class Chunck(Block):
         self.tmp_surf = pg.Surface((self.w*32, self.h*32)).convert_alpha()
 
         self.yx_not_nan = np.argwhere(self.block_floor_id != np.nan)
-        for i, j in self.yx_not_nan:
+        # for i, j in self.yx_not_nan:
+        #     self.blocks[i, j] = Block(
+        #         x=j+self.get_topleft()[0],
+        #         y=i+self.get_topleft()[1],
+        #         w=1,
+        #         h=1,
+        #         screen=screen, 
+        #         screen_rect=screen_rect,
+        #         id=self.block_floor_id[i, j] 
+        #     )
+
+        #     self.tmp_surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
+        #   # self.gui.surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
+        
+        @np.vectorize
+        def vec_set_blocks(i, j):
             self.blocks[i, j] = Block(
                 x=j+self.get_topleft()[0],
                 y=i+self.get_topleft()[1],
@@ -980,9 +995,11 @@ class Chunck(Block):
                 screen_rect=screen_rect,
                 id=self.block_floor_id[i, j] 
             )
+            
+        vec_set_blocks(self.yx_not_nan[:, 0], self.yx_not_nan[:, 1])
 
+        for i, j in self.yx_not_nan:
             self.tmp_surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
-            # self.gui.surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
         
         self.gui.render_bc = False
         self.gui.render_color = False
@@ -1102,30 +1119,42 @@ class Map(Square):
             self.del_indexes = tmp_index[counts == 1]
 
             self.chunck_load = True
-            # for i in self.del_indexes:
-            #     self.del_chunck(tuple(i))
-            # for i in self.add_indexes:
-            #     self.add_chunck(tuple(i))
-            
-
-        if len(self.del_indexes) != 0:
-            self.del_chunck(self.del_indexes[0])
-            self.del_indexes = self.del_indexes[1:]
-            self.add_chunck(self.add_indexes[0])
-            self.add_indexes = self.add_indexes[1:]
+            for i in self.del_indexes:
+                self.del_chunck(tuple(i))
+            for i in self.add_indexes:
+                self.add_chunck(tuple(i))
 
             # vec_del_indexes = np.vectorize(lambda i, j: self.del_chunck((i, j)))
-            # vec_del_indexes(del_indexes[:, 0], del_indexes[:, 1])
+            # vec_del_indexes(self.del_indexes[:, 0], self.del_indexes[:, 1])
             # vec_add_chunck = np.vectorize(lambda i, j: self.add_chunck((i, j)))
-            # vec_add_chunck(add_indexes[:, 0], add_indexes[:, 1])
-        
-            # if len(self.del_indexes) == 0 and self.chunck_load:
+            # vec_add_chunck(self.add_indexes[:, 0], self.add_indexes[:, 1])
+
             self.not_nan = []
             for i, c in enumerate(self.chuncks):
                 self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
             self.not_nan = np.array(self.not_nan)
             self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
             self.chunck_load = False
+
+        # # if len(self.del_indexes) != 0 and np.random.choice([True, False], p=[0.15, 1-0.15]):
+        # if len(self.del_indexes) != 0:  
+        #     self.del_chunck(self.del_indexes[0])
+        #     self.del_indexes = self.del_indexes[1:]
+        #     self.add_chunck(self.add_indexes[0])
+        #     self.add_indexes = self.add_indexes[1:]
+
+        #     # vec_del_indexes = np.vectorize(lambda i, j: self.del_chunck((i, j)))
+        #     # vec_del_indexes(self.del_indexes[:, 0], self.del_indexes[:, 1])
+        #     # vec_add_chunck = np.vectorize(lambda i, j: self.add_chunck((i, j)))
+        #     # vec_add_chunck(self.add_indexes[:, 0], self.add_indexes[:, 1])
+        
+        #     # if len(self.del_indexes) == 0 and self.chunck_load:
+        #     self.not_nan = []
+        #     for i, c in enumerate(self.chuncks):
+        #         self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+        #     self.not_nan = np.array(self.not_nan)
+        #     self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+        #     self.chunck_load = False
 
 
 
