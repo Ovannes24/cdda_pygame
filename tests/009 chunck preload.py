@@ -1054,7 +1054,7 @@ class Map(Square):
 
 
         self.chuncks = {
-            (i, j): Chunck(x=j, y=i, screen=screen, screen_rect=screen_rect) for i, j in self.yx_indexes
+            (i, j): Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect) for i, j in self.yx_indexes
         }
 
         self.not_nan = []
@@ -1087,6 +1087,21 @@ class Map(Square):
         self.not_nan = np.array(self.not_nan)
         self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
 
+    def add_chunck(self, yx_index):
+        print('add chunck', yx_index)
+        self.yx_indexes = np.append(self.yx_indexes, [yx_index], axis=0)
+        i, j = yx_index
+        self.chuncks[(i, j)] = Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect)
+        
+        self.not_nan = []
+        for i, c in enumerate(self.chuncks):
+            self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+        self.not_nan = np.array(self.not_nan)
+        self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+
+
+
+
 
 
     def __del__(self):
@@ -1111,6 +1126,9 @@ class Map(Square):
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_p:
                 self.del_chunck(self.yx_indexes[-1])
+            if event.key == pg.K_o:
+                self.add_chunck([self.yx_indexes[-1][0], self.yx_indexes[-1][1]+1])
+            
         # vec_event_handler = np.vectorize(lambda i, j: self.blocks[i, j].gui.event_handler(event))
         # vec_event_handler(self.not_nan[:, 0], self.not_nan[:, 1])
 
