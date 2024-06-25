@@ -37,7 +37,7 @@ FONT_SIZE = 20
 MAP_SIZE = (16, 24)
 # block_floor_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
 block_floor_id = np.array([
-    [0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, ],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
@@ -52,7 +52,7 @@ block_floor_id = np.array([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-    [0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, ],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
 ])
 
 
@@ -199,6 +199,7 @@ class SquarePhysicalGUI(SquareGUI):
         self.scalable = True
 
         self.set_time(self.scale)
+        
 
     def __del__(self):
         del self.scale
@@ -209,6 +210,9 @@ class SquarePhysicalGUI(SquareGUI):
         del self.time
         del self.speed
         super().__del__()
+
+    def set_scale(self, s):
+        self.relative_scale(s, self.screen_rect.width//2, self.screen_rect.height//2)
 
     def set_time(self, t):
         self.time = t
@@ -406,6 +410,10 @@ class MobGUI(TextureSquareGUI):
     def __del__(self):
         del self.hp_bar
         super().__del__()
+
+    def set_scale(self, s):
+        super().set_scale(s)
+        self.hp_bar.set_scale(s)
 
     def reflect_texture(self):
         self.surf = pg.transform.flip(self.surf, True, False)
@@ -1182,6 +1190,7 @@ class Map(Square):
         self.yx_indexes = np.append(self.yx_indexes, [yx_index], axis=0)
         i, j = yx_index
         self.chuncks[(i, j)] = Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect)
+        self.chuncks[(i, j)].gui.set_scale(game.gameplay.player.gui.scale)
         # self.chuncks[(i, j)].gui.scale = self.gui.scale
         # self.chuncks[(i, j)].gui.relative_scale(self.chuncks[(i, j)].gui.scale, self.chuncks[(i, j)].gui.screen_rect.width//2, self.chuncks[(i, j)].gui.screen_rect.height//2)
         # self.chuncks[(i, j)].gui.scale = self.gui.scale
@@ -1607,19 +1616,21 @@ class GamePlay:
 
     def add_object(self):
         if self.player.isFire:
-            self.objects.append(
-                Bullet(
+            blt = Bullet(
                     x=self.player.x, 
                     y=self.player.y, 
-                    w=0.5*game.gameplay.player.gui.scale,
-                    h=0.5*game.gameplay.player.gui.scale,
+                    # w=0.5*game.gameplay.player.gui.scale,
+                    # h=0.5*game.gameplay.player.gui.scale,
+                    w=0.5,
+                    h=0.5,
                     screen=self.screen, 
                     screen_rect=self.screen_rect,
                     dx=(self.cursor.gui.x - self.screen_rect.width/2) / 1000,
                     dy=(self.cursor.gui.y - self.screen_rect.height/2) / 1000,
                     hp_changer=50
                 )
-            )
+            blt.gui.set_scale(self.player.gui.scale)
+            self.objects.append(blt)
             self.n_objects +=1
             # print((self.cursor.x - self.player.x) / 32, (self.cursor.y - self.player.y) / 32)
 
