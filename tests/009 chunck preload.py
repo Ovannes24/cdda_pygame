@@ -265,11 +265,11 @@ class SquarePhysicalGUI(SquareGUI):
         if event.type == pg.KEYUP:
             if event.key == pg.K_LSHIFT:
                 self.shifted = False
-        if event.type == pg.MOUSEWHEEL:
-            if event.y <= 0:
-                self.zoom_in = True
-            else:
-                self.zoom_out = True
+        # if event.type == pg.MOUSEWHEEL:
+        #     if event.y <= 0:
+        #         self.zoom_in = True
+        #     else:
+        #         self.zoom_out = True
 
     def render(self):
         super().render()
@@ -972,7 +972,9 @@ class Chunck(Block):
 
         self.set_topleft(self.x*16, self.y*16)
 
-        self.block_floor_id = block_floor_id
+        # self.block_floor_id = block_floor_id
+        self.block_floor_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_floor_id
+        
         self.blocks = self.block_floor_id.copy().astype(object)
 
         self.tmp_surf = pg.Surface((self.w*32, self.h*32)).convert_alpha()
@@ -1258,16 +1260,25 @@ class Inventory:
     def __init__(self) -> None:
         self.objects = []
     
+    def __getitem__(self, i):
+        return self.objects[i]
+
     def add_items(self, items):
         self.objects += items
+    
+    def __len__(self):
+        return len(self.objects)
 
 class Item(Square):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='gun') -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         self.collidable = True 
         self.time = 1
         self.speed = self.time * 0.0
 
+        self.type = type
+        self.name = 'gun 1.1'
+        
         self.isActivate = False
 
         self.gui = MobGUI(
@@ -1279,7 +1290,7 @@ class Item(Square):
             h=self.h*32,
             c=GREEN
         )
-        self.gui.reset_texture('./tiles/gun.png')
+        self.gui.reset_texture(f'./tiles/{type}.png')
 
         self.gui.render_color = False
         self.gui.render_bc = False
@@ -1287,6 +1298,43 @@ class Item(Square):
     def __del__(self):
         del self.isActivate
         super().__del__()
+
+    def activate_handler(self):
+        if self.isActivate:
+            self.isActivate = False
+            if self.type == 'gun':
+                blt = Bullet(
+                    x=game.gameplay.player.x, 
+                    y=game.gameplay.player.y, 
+                    # w=0.5*game.gameplay.player.gui.scale,
+                    # h=0.5*game.gameplay.player.gui.scale,
+                    w=0.5,
+                    h=0.5,
+                    screen=game.gameplay.screen, 
+                    screen_rect=game.gameplay.screen_rect,
+                    dx=(game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2) / 1000,
+                    dy=(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2) / 1000,
+                    hp_changer=50
+                )
+                blt.gui.set_scale(game.gameplay.player.gui.scale)
+                game.gameplay.add_object(blt)
+            elif self.type == 'knife':
+                blt = Bullet(
+                    x=game.gameplay.player.x, 
+                    y=game.gameplay.player.y, 
+                    # w=0.5*game.gameplay.player.gui.scale,
+                    # h=0.5*game.gameplay.player.gui.scale,
+                    w=0.5,
+                    h=0.5,
+                    screen=game.gameplay.screen, 
+                    screen_rect=game.gameplay.screen_rect,
+                    dx=0,
+                    dy=0,
+                    hp_changer=50
+                )
+                blt.gui.set_scale(game.gameplay.player.gui.scale)
+                game.gameplay.add_object(blt)
+            
 
     def get_chunck_pos_yx(self):
         return int(self.y//16), int(self.x//16)
@@ -1304,6 +1352,7 @@ class Item(Square):
     def render(self):
         self.gui.render()
         self.move()
+        self.activate_handler()
 
 class Mob(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
@@ -1313,6 +1362,8 @@ class Mob(Square):
         self.speed = self.time * 0.1
 
         self.isAlive = True
+
+        self.inventory = Inventory()
 
         self.gui = MobGUI(
             screen=screen,
@@ -1329,6 +1380,7 @@ class Mob(Square):
 
     def __del__(self):
         del self.isAlive
+        del self.inventory
         super().__del__()
 
     def get_chunck_pos_yx(self):
@@ -1366,6 +1418,12 @@ class Player(Mob):
     def __init__(self, x=0, y=0, w=1, h=1,screen=None, screen_rect=None) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         
+        self.inventory.add_items([
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun'),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife'),
+        ])
+        self.chosen_item = 0 % len(self.inventory)
+
         self.gui.reset_texture('./tiles/player.png')
         # self.gui.reset_color(BLUE)
 
@@ -1421,6 +1479,7 @@ class Player(Mob):
 
     def event_handler(self, event):
         self.gui.event_handler(event)
+        self.inventory[self.chosen_item].event_handler(event)
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_w and not self.down_pressed:
                 self.up_pressed = True
@@ -1453,15 +1512,24 @@ class Player(Mob):
             if self.right_pressed and event.key == pg.K_d:
                 self.x_rel = 0
                 self.right_pressed = False
-        
+        if event.type == pg.MOUSEWHEEL:
+            if event.y <= 0:
+                self.chosen_item = (self.chosen_item + 1) % len(self.inventory)
+            else:
+                self.chosen_item = (self.chosen_item - 1) % len(self.inventory)
+
         if event.type == pg.MOUSEBUTTONDOWN:
             self.isFire = True
+            self.inventory[self.chosen_item].isActivate = True
         if event.type == pg.MOUSEBUTTONUP:
             self.isFire = False
+            self.inventory[self.chosen_item].isActivate = False
     
     def render(self):
         # print(self.get_center(), self.gui.scale)
         self.gui.render()
+        self.inventory[self.chosen_item].gui.set_center(self.gui.x+0.5*32*self.gui.scale, self.gui.y)
+        self.inventory[self.chosen_item].render()
         self.move()
         self.dead_handler()
         # print('Plr', self.get_x(), self.get_y())
@@ -1637,6 +1705,8 @@ class GamePlay:
         self.mobs = []
         self.n_mobs = 10
 
+        self.item = Item(x=2, y=2, screen=screen, screen_rect=screen_rect)
+
         for mob in range(self.n_mobs):
             self.mobs.append(
                 Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
@@ -1658,22 +1728,22 @@ class GamePlay:
         self.n_objects = 0
         self._del_objects_list = []
 
-    def add_object(self):
+    def add_object(self, blt):
         if self.player.isFire:
-            blt = Bullet(
-                    x=self.player.x, 
-                    y=self.player.y, 
-                    # w=0.5*game.gameplay.player.gui.scale,
-                    # h=0.5*game.gameplay.player.gui.scale,
-                    w=0.5,
-                    h=0.5,
-                    screen=self.screen, 
-                    screen_rect=self.screen_rect,
-                    dx=(self.cursor.gui.x - self.screen_rect.width/2) / 1000,
-                    dy=(self.cursor.gui.y - self.screen_rect.height/2) / 1000,
-                    hp_changer=50
-                )
-            blt.gui.set_scale(self.player.gui.scale)
+            # blt = Bullet(
+            #     x=self.player.x, 
+            #     y=self.player.y, 
+            #     # w=0.5*game.gameplay.player.gui.scale,
+            #     # h=0.5*game.gameplay.player.gui.scale,
+            #     w=0.5,
+            #     h=0.5,
+            #     screen=self.screen, 
+            #     screen_rect=self.screen_rect,
+            #     dx=(self.cursor.gui.x - self.screen_rect.width/2) / 1000,
+            #     dy=(self.cursor.gui.y - self.screen_rect.height/2) / 1000,
+            #     hp_changer=50
+            # )
+            # blt.gui.set_scale(self.player.gui.scale)
             self.objects.append(blt)
             self.n_objects +=1
             # print((self.cursor.x - self.player.x) / 32, (self.cursor.y - self.player.y) / 32)
@@ -1706,7 +1776,10 @@ class GamePlay:
         # vec_camera_center_y_blocks = np.vectorize(lambda i, j: self.map.blocks[i, j].gui.set_y(self.map.blocks[i, j].gui.y - self.camera.gui.y + self.screen_rect.height/2))
         # vec_camera_center_x_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
         # vec_camera_center_y_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
-        
+
+
+        self.item.gui.set_x(self.item.gui.x - self.camera.gui.x + self.screen_rect.width/2)
+        self.item.gui.set_y(self.item.gui.y - self.camera.gui.y + self.screen_rect.height/2)
 
         for mob in range(self.n_mobs):
             self.mobs[mob].gui.set_x(self.mobs[mob].gui.x - self.camera.gui.x + self.screen_rect.width/2)
@@ -1791,7 +1864,7 @@ class GamePlay:
     def event_handler(self, event):
         
         self.map.event_handler(event)
-        
+        self.item.event_handler(event)
         for mob in range(self.n_mobs):
             self.mobs[mob].event_handler(event)
 
@@ -1809,6 +1882,8 @@ class GamePlay:
         self.camera_center()
         self.map.render()
         self.camera.render()
+
+        self.item.render()
         for mob in range(self.n_mobs):
             self.mobs[mob].render()
 
@@ -1821,7 +1896,7 @@ class GamePlay:
         self.player.render()
         self.cursor.render()
         # self.player.isFire = True
-        self.add_object()
+        # self.add_object(blt)
         self.collide()
         # print(self.n_objects, self._del_objects_list)
         self.del_objects()
