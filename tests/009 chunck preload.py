@@ -1261,6 +1261,50 @@ class Inventory:
     def add_items(self, items):
         self.objects += items
 
+class Item(Square):
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
+        super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
+        self.collidable = True 
+        self.time = 1
+        self.speed = self.time * 0.0
+
+        self.isActivate = False
+
+        self.gui = MobGUI(
+            screen=screen,
+            screen_rect=screen_rect,
+            x=self.x*32,
+            y=self.y*32,
+            w=self.w*32,
+            h=self.h*32,
+            c=GREEN
+        )
+        self.gui.reset_texture('./tiles/gun.png')
+
+        self.gui.render_color = False
+        self.gui.render_bc = False
+
+    def __del__(self):
+        del self.isActivate
+        super().__del__()
+
+    def get_chunck_pos_yx(self):
+        return int(self.y//16), int(self.x//16)
+        
+    def move(self):
+        self.set_x(self.x)
+        self.set_y(self.y)
+
+        self.gui.set_x(self.x*32*self.gui.scale)
+        self.gui.set_y(self.y*32*self.gui.scale)
+
+    def event_handler(self, event):
+        self.gui.event_handler(event)
+        
+    def render(self):
+        self.gui.render()
+        self.move()
+
 class Mob(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
