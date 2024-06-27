@@ -165,7 +165,20 @@ class SquareGUI:
         self.x = x-self.w/2
         self.y = y-self.h/2
         self.rect.center = (x-self.w/2, y-self.h/2)
-
+    def set_top(self, y):
+        self.y=y+self.h/2
+        self.rect.center = (self.x, y+self.h/2)
+    def set_bottom(self, y):
+        self.y=y-self.h/2
+        self.rect.center = (self.x, y-self.h/2)
+    def set_right(self, x):
+        self.x=x-self.w/2
+        self.rect.center = (xself.w/2, self.y)
+    def set_left(self, x):
+        self.x=x+self.w/2
+        self.rect.center = (x+self.w/2, self.y)
+        
+        
     def get_top(self): 
         return self.y-self.h/2
     def get_right(self):
@@ -490,6 +503,7 @@ class Button(SquareGUI):
         self.surf_font = self.font.render(self.text, True, WHITE)
         self.rect_font = self.surf_font.get_rect()
         self.rect_font.center = (self.w/2, self.h/2)
+        # self.rect_font.center = self.get_center()
 
     def __del__(self):
         del self.clicked
@@ -648,6 +662,87 @@ class WindowSetting(Window):
     def render(self):
         super().render()
         self.btn1.render()
+
+class WindowInventory(Window):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[], gameplay=None) -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, objects)
+
+        self.inventory_list = []
+
+        k = 0
+        for i in gameplay.player.inventory.get_objects():
+            btn0 = TextureSquareGUI(
+                screen=self.surf,
+                screen_rect=self.rect, 
+                x=0, 
+                y=20 + k*25 + 2*k, 
+                w=25, 
+                h=25, 
+                c=BLACK
+            )
+            btn1 = Button(
+                screen=self.surf,
+                screen_rect=self.rect, 
+                x=0, 
+                y=20 + k*25 + 2*k, 
+                w=(self.w-20)//2, 
+                h=25, 
+                c=BLACK,
+                text=i.type
+            )
+            btn2 = Button(
+                screen=self.surf,
+                screen_rect=self.rect, 
+                x=self.w, 
+                y=20 + k*25 + 2*k, 
+                w=(self.w-20)//2, 
+                h=25, 
+                c=BLACK,
+                text=i.name
+            )
+
+            btn0.surf = pg.transform.scale(i.gui.surf, (25, 25))
+            btn0.scalable = False
+
+            btn0.set_left(0)
+            btn1.set_left(btn0.get_right())
+            btn2.set_left(btn1.get_right())
+            
+            self.inventory_list.append([
+                btn0,
+                btn1, 
+                btn2
+            ])
+
+            self.inventory_list[-1][0].motionable = False
+            self.inventory_list[-1][1].motionable = False
+            self.inventory_list[-1][2].motionable = False
+            
+            
+            
+            
+            k+=1
+
+    def __del__(self):
+        super().__del__()
+
+    def event_handler(self, event):
+        super().event_handler(event)
+        for i in self.inventory_list:
+            i[0].event_handler(event)
+            i[1].event_handler(event)
+            i[2].event_handler(event)
+            
+            
+    
+    def render(self):
+        super().render()
+        for i in self.inventory_list:
+            i[0].render()
+            i[1].render()
+            i[2].render()
+            
+
 
 class Camera(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
@@ -1262,6 +1357,9 @@ class Inventory:
     
     def __getitem__(self, i):
         return self.objects[i]
+    
+    def get_objects(self):
+        return self.objects
 
     def add_items(self, items):
         self.objects += items
@@ -1277,7 +1375,7 @@ class Item(Square):
         self.speed = self.time * 0.0
 
         self.type = type
-        self.name = 'gun 1.1'
+        self.name = f'{type} 1.1'
         
         self.isActivate = False
 
@@ -1936,6 +2034,8 @@ class Game:
             objects=[]
         )
 
+        self.gameplay = GamePlay(self.window_map.surf, self.window_map.rect)
+
         self.window_setting = WindowSetting(
             self.screen, 
             self.screen_rect, 
@@ -1948,9 +2048,21 @@ class Game:
             objects=[]
         )
 
+        self.window_inventory = WindowInventory(
+            self.screen, 
+            self.screen_rect, 
+            x=self.screen_rect.centerx+450,
+            y=self.screen_rect.centery,
+            w=250,
+            h=400,
+            c=BLACK,
+            alpha=255,
+            objects=[],
+            gameplay=self.gameplay
+        )
+
         
 
-        self.gameplay = GamePlay(self.window_map.surf, self.window_map.rect)
 
     def set_running(self, b):
         self.running = b
@@ -1958,12 +2070,16 @@ class Game:
     def event_handler(self, event):
         self.window_map.event_handler(event)
         self.window_setting.event_handler(event)
+        self.window_inventory.event_handler(event)
+        
         self.gameplay.event_handler(event)
 
     def render(self):
         self.screen.fill(BLACK)
         self.window_map.render()
         self.window_setting.render()
+        self.window_inventory.render()
+        
         self.gameplay.render()
         
 
