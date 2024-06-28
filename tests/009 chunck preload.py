@@ -378,6 +378,12 @@ class HPBarGUI(SquarePhysicalGUI):
         if not (self.hp + val >= self.hp_max):
             self.hp += val
             self.reset_hp_w()
+        else:
+            self.hp = self.hp_max
+            self.reset_hp_w()
+        # self.hp = (self.hp+val) % (self.hp_max+1)
+        # print(self.hp)
+        # self.reset_hp_w()    
 
 class TextureSquareGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
@@ -409,6 +415,7 @@ class MobGUI(TextureSquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
         super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, texture_file=texture_file)
 
+        self.render_hp_bar = True
         self.hp_bar = HPBarGUI(
             screen, 
             screen_rect, 
@@ -421,6 +428,7 @@ class MobGUI(TextureSquareGUI):
         )
 
     def __del__(self):
+        del self.render_hp_bar
         del self.hp_bar
         super().__del__()
 
@@ -476,8 +484,9 @@ class MobGUI(TextureSquareGUI):
     def render(self):
         # self.screen.blit(self.surf, self.rect)
         super().render()
-        self.hp_bar.set_bottomleft(*self.get_topleft())
-        self.hp_bar.render()
+        if self.render_hp_bar:
+            self.hp_bar.set_bottomleft(*self.get_topleft())
+            self.hp_bar.render()
         self.zoom()
 
 class CursorGUI(TextureSquareGUI):
@@ -741,8 +750,6 @@ class WindowInventory(Window):
             i[0].render()
             i[1].render()
             i[2].render()
-            
-
 
 class Camera(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
@@ -1368,8 +1375,9 @@ class Inventory:
         return len(self.objects)
 
 class Item(Square):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='gun') -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='gun', owner=None) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
+        self.owner = owner
         self.collidable = True 
         self.time = 1
         self.speed = self.time * 0.0
@@ -1388,6 +1396,8 @@ class Item(Square):
             h=self.h*32,
             c=GREEN
         )
+        self.gui.render_hp_bar = False
+
         self.gui.reset_texture(f'./tiles/{type}.png')
 
         self.gui.render_color = False
@@ -1406,8 +1416,8 @@ class Item(Square):
                     y=game.gameplay.player.y, 
                     # w=0.5*game.gameplay.player.gui.scale,
                     # h=0.5*game.gameplay.player.gui.scale,
-                    w=0.5,
-                    h=0.5,
+                    w=7/32,
+                    h=7/32,
                     screen=game.gameplay.screen, 
                     screen_rect=game.gameplay.screen_rect,
                     dx=(game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2) / 1000,
@@ -1432,6 +1442,9 @@ class Item(Square):
                 )
                 blt.gui.set_scale(game.gameplay.player.gui.scale)
                 game.gameplay.add_object(blt)
+            elif self.type == 'food':
+                self.owner.gui.hp_bar.heal_hp(100)   
+
             
 
     def get_chunck_pos_yx(self):
@@ -1517,8 +1530,10 @@ class Player(Mob):
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         
         self.inventory.add_items([
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun'),
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife'),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun', owner=self),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='food', owner=self),
+            
         ])
         self.chosen_item = 0 % len(self.inventory)
 
@@ -1687,6 +1702,12 @@ class Bullet(KillZone):
         super().__init__(x, y, w, h, screen, screen_rect, hp_changer)
         self.dx = dx
         self.dy = dy
+
+        self.gui.reset_texture('./tiles/bullet.png')
+        self.gui.set_wh(32, 32)
+        self.gui.set_x(self.gui.get_xy()[0])
+        self.gui.set_x(self.gui.get_xy()[0])
+        
 
     def __del__(self):
         del self.dx
