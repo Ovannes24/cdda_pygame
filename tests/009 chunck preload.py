@@ -55,7 +55,18 @@ block_floor_id = np.array([
     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
 ])
 
+# class Tilemap:
+#     def __init__(self, filename) -> None:
+#         self.filename = filename
+#         self.map = pg.image.load(self.filename) 
+#         self.W = self.map.get_width()
+#         self.H = self.map.get_height()
 
+#     def get_image_by_id(self, i):
+#         tile = pg.Surface((32, 32))
+#         x, y = (i*32) % self.W, (i*32) // self.H
+#         tile.blit(self.map, (0, 0), (x, y, 32, 32))
+#         return tile
 
 class Class:
     def __init__(self) -> None:
@@ -108,7 +119,11 @@ class SquareGUI:
     def set_screen(self, screen, screen_rect):
         self.screen = screen
         self.screen_rect = screen_rect
-
+    def reset_screen(self, screen):
+        self.screen = screen
+        # center = self.screen_rect.center
+        self.screen_rect = screen.get_rect()
+        # self.screen_rect.center = center
     def set_surf_origin(self, surf):
         self.surf_origin = surf
         self.surf = self.surf_origin
@@ -173,7 +188,7 @@ class SquareGUI:
         self.rect.center = (self.x, y-self.h/2)
     def set_right(self, x):
         self.x=x-self.w/2
-        self.rect.center = (xself.w/2, self.y)
+        self.rect.center = (self.w/2, self.y)
     def set_left(self, x):
         self.x=x+self.w/2
         self.rect.center = (x+self.w/2, self.y)
@@ -301,6 +316,9 @@ class BlockGUI(SquarePhysicalGUI):
     def __del__(self):
         del self.texture_file
         super().__del__()
+
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
 
     def set_rect(self, surf):
         self.rect = surf.get_rect()
@@ -432,6 +450,10 @@ class MobGUI(TextureSquareGUI):
         del self.hp_bar
         super().__del__()
 
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
+        self.hp_bar.reset_screen(screen)
+
     def set_scale(self, s):
         super().set_scale(s)
         self.hp_bar.set_scale(s)
@@ -497,7 +519,7 @@ class CursorGUI(TextureSquareGUI):
         super().__del__()
 
 class Button(SquareGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=RED, text='', active_f=lambda : ... , **kwargs) -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=BLACK, activate_color=BLUE,text='', active_f=lambda : ... , **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, **kwargs)
         
         self.active_f = active_f
@@ -506,6 +528,7 @@ class Button(SquareGUI):
         self.motionable = True
 
         self.btn_color = self.c
+        self.activate_color = activate_color
 
         self.text = text
         self.font = pg.font.Font(FONT, FONT_SIZE)
@@ -519,11 +542,15 @@ class Button(SquareGUI):
         del self.motionable
         super().__del__()
 
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
+
+
     def event_handler(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft)):
                 self.clicked = True
-                self.c = GREEN
+                self.c = self.activate_color
         elif event.type == pg.MOUSEBUTTONUP:
             self.clicked = False
             self.c = self.btn_color
@@ -597,6 +624,65 @@ class Window(SquareGUI):
         del self.number_number
         super().__del__()
 
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
+        self.btn.reset_screen(screen)
+
+    def set_wh(self, w, h):
+        self.w = w
+        self.h = h
+
+        self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
+        self.set_rect(self.surf)
+        # self.rect.size = (self.w, self.h)
+        # self.set_rect(self.surf)
+
+    def set_rect(self, surf):
+        self.rect = surf.get_rect()
+        self.rect.center = (self.x, self.y)   
+
+    def set_center(self, x, y):
+        self.x, self.y = x, y
+        self.rect.center = (self.x, self.y)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_topleft(self, x, y):
+        self.x = x+self.w/2
+        self.y = y+self.h/2
+        self.rect.center = (x+self.w/2, y+self.h/2)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_topright(self, x, y):
+        self.x = x-self.w/2 
+        self.y = y+self.h/2
+        self.rect.center = (x-self.w/2, y+self.h/2)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_bottomleft(self, x, y):
+        self.x = x+self.w/2
+        self.y = y-self.h/2
+        self.rect.center = (x+self.w/2, y-self.h/2)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_bottomright(self, x, y):
+        self.x = x-self.w/2
+        self.y = y-self.h/2
+        self.rect.center = (x-self.w/2, y-self.h/2)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_top(self, y):
+        self.y=y+self.h/2
+        self.rect.center = (self.x, y+self.h/2)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_bottom(self, y):
+        self.y=y-self.h/2
+        self.rect.center = (self.x, y-self.h/2)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_right(self, x):
+        self.x=x-self.w/2
+        self.rect.center = (self.w/2, self.y)
+        self.btn.set_bottomleft(*self.get_topleft())
+    def set_left(self, x):
+        self.x=x+self.w/2
+        self.rect.center = (x+self.w/2, self.y)
+        self.btn.set_bottomleft(*self.get_topleft())
+        
+
     def set_objects(self, objects=[]):
         self.objects = objects
         self.number_number = len(self.objects)
@@ -612,6 +698,7 @@ class Window(SquareGUI):
 
     def render(self):
         self.set_topleft(*self.btn.get_bottomleft())
+        # self.btn.set_bottomleft(*self.get_topleft())
         super().render()
 
         for i in range(self.number_number):
@@ -663,6 +750,11 @@ class WindowSetting(Window):
 
     def __del__(self):
         super().__del__()
+
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
+        self.btn1.reset_screen(self.surf)
+        
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -735,6 +827,13 @@ class WindowInventory(Window):
     def __del__(self):
         super().__del__()
 
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
+        for b in self.inventory_list:
+            b[0].reset_screen(self.surf)
+            b[1].reset_screen(self.surf)
+            b[2].reset_screen(self.surf)
+
     def event_handler(self, event):
         super().event_handler(event)
         for i in self.inventory_list:
@@ -750,6 +849,37 @@ class WindowInventory(Window):
             i[0].render()
             i[1].render()
             i[2].render()
+
+class WindowPlayerInformation(Window):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, objects)
+
+        self.btn1 = Button(
+            screen=self.surf,
+            screen_rect=self.rect, 
+            x=self.w/2, 
+            y=20, 
+            w=self.w-20, 
+            h=25, 
+            c=BLACK,
+            text='INFO',
+        )
+        self.btn1.motionable = False
+
+    def __del__(self):
+        super().__del__()
+
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
+        self.btn1.reset_screen(self.surf)
+
+    def event_handler(self, event):
+        super().event_handler(event)
+        self.btn1.event_handler(event)
+    
+    def render(self):
+        super().render()
+        self.btn1.render()
 
 class Camera(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
@@ -1126,6 +1256,16 @@ class Chunck(Block):
         del self.speed
         super().__del__()
 
+    def reset_screen(self, screen):
+        self.gui.reset_screen(screen)
+        
+        @np.vectorize
+        def vec_reset_screen_blocks(i, j):
+            self.blocks[i, j].gui.reset_screen(screen)
+            
+        vec_reset_screen_blocks(self.yx_not_nan[:, 0], self.yx_not_nan[:, 1])
+
+
     def get_not_nan_blocks(self):
         return np.argwhere(self.block_floor_id != np.nan) +  np.array([self.get_topleft()[1], self.get_topleft()[0]])
 
@@ -1212,6 +1352,10 @@ class Map(Square):
         # del self.not_nan
         super().__del__()
 
+    def reset_screen(self, screen):
+        self.gui.reset_screen(screen)
+        for i, c in enumerate(self.chuncks):
+            self.chuncks[c].reset_screen(screen)
 
     def check_chunck_render(self):
         if game.gameplay.player.chunck_pos != game.gameplay.player.get_chunck_pos_yx():
@@ -1569,6 +1713,11 @@ class Player(Mob):
 
         super().__del__()
 
+    def reset_screen(self, screen):
+        self.gui.reset_screen(screen)
+        for i in range(len(self.inventory.get_objects())):
+            self.inventory[i].gui.reset_screen(screen)
+
     def move(self):
         if self.isAlive:
             if self.up_pressed:
@@ -1641,6 +1790,8 @@ class Player(Mob):
     def render(self):
         # print(self.get_center(), self.gui.scale)
         self.gui.render()
+        # self.isFire = True
+        # self.inventory[self.chosen_item].isActivate = True
         self.inventory[self.chosen_item].gui.set_center(self.gui.x+0.5*32*self.gui.scale, self.gui.y)
         self.inventory[self.chosen_item].render()
         self.move()
@@ -1847,6 +1998,28 @@ class GamePlay:
         self.n_objects = 0
         self._del_objects_list = []
 
+    def reset_screen(self, screen):
+        self.screen = screen
+        self.screen_rect = self.screen.get_rect()
+        self.map.reset_screen(screen)
+        self.item.gui.reset_screen(screen)
+        for mob in range(self.n_mobs):
+            self.mobs[mob].gui.reset_screen(screen)
+
+        self.kill_zone.gui.reset_screen(screen)
+        self.heal_zone.gui.reset_screen(screen)
+
+        for o in range(self.n_objects):
+            self.objects[o].gui.reset_screen(screen)
+        
+
+        self.cursor.gui.reset_screen(screen)
+        self.player.reset_screen(screen)
+        self.camera.gui.reset_screen(screen)
+        self.camera.set_center(self.screen_rect.width/2, self.screen_rect.height/2)
+        self.camera.gui.set_wh(self.screen_rect.width-100, self.screen_rect.height-100)
+        
+
     def add_object(self, blt):
         if self.player.isFire:
             # blt = Bullet(
@@ -1978,8 +2151,6 @@ class GamePlay:
             if self.heal_zone.collidesquare(self.mobs[mob]):
                 self.mobs[mob].gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
 
-        
-
     def event_handler(self, event):
         
         self.map.event_handler(event)
@@ -2043,19 +2214,34 @@ class Game:
         self.running = True
 
 
+        # self.tilemap_mob = Tilemap()
         self.window_map = WindowMap(
             self.screen, 
             self.screen_rect, 
             x=self.screen_rect.centerx,
             y=self.screen_rect.centery,
-            w=900,
-            h=800,
+            w=self.screen_rect.width-350,
+            h=self.screen_rect.height,
             c=BLACK,
             alpha=255,
             objects=[]
         )
+        self.window_map.set_topleft(0, 0)
 
         self.gameplay = GamePlay(self.window_map.surf, self.window_map.rect)
+
+        self.window_player_information = WindowPlayerInformation(
+            self.screen, 
+            self.screen_rect, 
+            x=self.screen_rect.centerx,
+            y=self.screen_rect.centery,
+            w=350,
+            h=self.screen_rect.height,
+            c=BLACK,
+            alpha=255,
+            objects=[]
+        )
+        self.window_player_information.set_topright(*self.screen_rect.topright)
 
         self.window_setting = WindowSetting(
             self.screen, 
@@ -2082,22 +2268,54 @@ class Game:
             gameplay=self.gameplay
         )
 
-        
-
-
     def set_running(self, b):
         self.running = b
 
+    def resize(self, x, y):
+        # self.screen_rect.size = (x, y)
+        # self.window_map.set_wh(x-350, y)
+        # self.window_map.set_topleft(0, 0)
+        # self.window_player_information.set_wh(350, y)
+        # self.window_player_information.set_topright(*self.screen_rect.topright)
+        self.width  = x
+        self.height = y
+
+        self.screen_rect = self.screen.get_rect()
+
+        
+        self.window_map.reset_screen(self.screen)
+
+        self.window_map.set_wh(x-350, y)
+        self.window_map.set_topleft(0, 0)
+        self.window_player_information.set_wh(350, y)
+        self.window_player_information.set_topright(*self.screen_rect.topright)
+
+        self.gameplay.reset_screen(self.window_map.surf)
+
+
+        self.window_player_information.reset_screen(self.screen)
+        self.window_setting.reset_screen(self.screen)
+        self.window_inventory.reset_screen(self.screen)
+        
+
     def event_handler(self, event):
+        if event.type == pg.WINDOWRESIZED:
+            self.resize(event.x, event.y)
+            print(event, event.x, event.y, self.screen.get_rect().size, self.screen_rect)
         self.window_map.event_handler(event)
+        self.window_player_information.event_handler(event)
+        
+
         self.window_setting.event_handler(event)
         self.window_inventory.event_handler(event)
         
         self.gameplay.event_handler(event)
 
     def render(self):
-        self.screen.fill(BLACK)
+        # self.screen.fill(BLACK)
         self.window_map.render()
+        self.window_player_information.render()
+        
         self.window_setting.render()
         self.window_inventory.render()
         
