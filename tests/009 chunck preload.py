@@ -545,7 +545,14 @@ class Button(SquareGUI):
         super().__del__()
 
     def reset_screen(self, screen):
-        super().reset_screen(screen)
+        self.screen = screen
+        # center = self.screen_rect.center
+        # self.screen_rect = screen.get_rect()
+        # self.set_center(self.x, self.y)
+        # self.screen_rect.center = (self.x, self.y)
+
+    # def reset_screen(self, screen):
+    #     super().reset_screen(screen)
 
 
     def event_handler(self, event):
@@ -637,6 +644,7 @@ class Window(SquareGUI):
         self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
         self.set_rect(self.surf)
         self.set_center(self.x, self.y)
+        self.btn.set_wh(w, self.btn.h)
         # self.rect.size = (self.w, self.h)
         # self.set_rect(self.surf)
 
@@ -738,18 +746,19 @@ class WindowSetting(Window):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, objects)
 
-        self.btn1 = Button(
-            screen=self.surf,
-            screen_rect=self.rect, 
-            x=self.w/2, 
-            y=20, 
-            w=self.w-20, 
-            h=25, 
-            c=BLACK,
-            text='EXIT',
-            active_f=lambda : game.set_running(False)
-        )
-        self.btn1.motionable = False
+        self.objects.append(
+            Button(
+                screen=self.surf,
+                screen_rect=self.rect, 
+                x=self.w/2, 
+                y=20, 
+                w=self.w-20, 
+                h=25, 
+                c=BLACK,
+                text='EXIT',
+                active_f=lambda : game.set_running(False)
+            ))
+        self.objects[-1].motionable = False
 
     def __del__(self):
         super().__del__()
@@ -761,11 +770,13 @@ class WindowSetting(Window):
 
     def event_handler(self, event):
         super().event_handler(event)
-        self.btn1.event_handler(event)
+        for o in  self.objects:
+            o.event_handler(event)
     
     def render(self):
         super().render()
-        self.btn1.render()
+        for o in  self.objects:
+            o.render()
 
 class WindowInventory(Window):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[], gameplay=None) -> None:
@@ -822,10 +833,9 @@ class WindowInventory(Window):
             self.inventory_list[-1][1].motionable = False
             self.inventory_list[-1][2].motionable = False
             
-            
-            
-            
             k+=1
+
+        self.objects += self.inventory_list[0]+self.inventory_list[1]+self.inventory_list[2]
 
     def __del__(self):
         super().__del__()
@@ -839,65 +849,74 @@ class WindowInventory(Window):
 
     def event_handler(self, event):
         super().event_handler(event)
-        for i in self.inventory_list:
-            i[0].event_handler(event)
-            i[1].event_handler(event)
-            i[2].event_handler(event)
+        for o in self.objects:
+            o.event_handler(event)
             
             
     
     def render(self):
         super().render()
-        for i in self.inventory_list:
-            i[0].render()
-            i[1].render()
-            i[2].render()
+        for o in self.objects:
+            o.render()
 
 class WindowPlayerInformation(Window):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
-        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, objects)
+        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, objects=objects)
 
-        self.btn1 = Button(
-            screen=self.surf,
-            screen_rect=self.rect, 
-            x=self.w/2, 
-            y=20, 
-            w=self.w-20, 
-            h=25, 
-            c=BLACK,
-            text='INFO',
-        )
-        self.btn1.motionable = False
+        self.objects.append(
+            Button(
+                screen=self.surf,
+                screen_rect=self.rect, 
+                x=self.w/2, 
+                y=20, 
+                w=self.w-20, 
+                h=25, 
+                c=BLACK,
+                text='INFO',
+            ))
+        self.objects[-1].motionable = False
 
     def __del__(self):
         super().__del__()
 
     def reset_screen(self, screen):
         super().reset_screen(screen)
-        # self.btn1.reset_screen(self.surf)
-        # print('========================================', self.btn1.screen_rect, self.btn1.rect)
+        self.set_wh(self.w, self.screen_rect.height)
+        self.set_topright(*self.screen_rect.topright) 
+        # print(self.rect)
+    
+    def set_rect(self, surf):
+        self.rect = surf.get_rect()
+        self.rect.center = (self.x, self.y)   
+
 
     def set_wh(self, w, h):
         self.w = w
         self.h = h
 
-        self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
+        # self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
+        self.surf = pg.Surface((self.w, self.h))
         self.rect.size = self.surf.get_rect().size
-        print(self.rect.size)
+        
         # self.set_rect(self.surf)
         # self.set_center(self.x, self.y)
-        self.btn1.reset_screen(self.surf)
+        for o in  self.objects:
+            o.reset_screen(self.surf)
+
         # self.btn1.set_center(*self.btn1.get_center())
         # self.rect.size = (self.w, self.h)
         # self.set_rect(self.surf)
 
+
     def event_handler(self, event):
         super().event_handler(event)
-        self.btn1.event_handler(event)
+        for o in  self.objects:
+            o.event_handler(event)
     
     def render(self):
         super().render()
-        self.btn1.render()
+        for o in  self.objects:
+            o.render()
 
 class Camera(SquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
@@ -1697,6 +1716,7 @@ class Player(Mob):
             Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='food', owner=self),
             
         ])
+            
         self.chosen_item = 0 % len(self.inventory)
 
         self.gui.reset_texture('./tiles/player.png')
@@ -2305,14 +2325,15 @@ class Game:
 
         self.window_map.set_wh(x-350, y)
         self.window_map.set_topleft(0, 0)
-        self.window_player_information.set_wh(350, y)
-        self.window_player_information.set_topright(*self.screen_rect.topright)
 
+        self.window_player_information.reset_screen(self.screen)
+
+        # self.window_player_information.set_wh(350, y)
+        # self.window_player_information.set_topright(*self.screen_rect.topright)
 
         self.gameplay.reset_screen(self.window_map.surf)
 
 
-        self.window_player_information.reset_screen(self.screen)
         self.window_setting.reset_screen(self.screen)
         self.window_inventory.reset_screen(self.screen)
         
