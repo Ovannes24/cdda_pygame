@@ -123,13 +123,15 @@ class SquareGUI:
         self.screen = screen
         # center = self.screen_rect.center
         self.screen_rect = screen.get_rect()
-        # self.screen_rect.center = center
+        self.set_center(self.x, self.y)
+        # self.screen_rect.center = (self.x, self.y)
     def set_surf_origin(self, surf):
         self.surf_origin = surf
         self.surf = self.surf_origin
     def set_rect(self, surf):
         self.rect = surf.get_rect()
-        self.rect.center = (self.x, self.y)
+        # self.rect.center = (self.x, self.y)
+        self.set_center(self.x, self.y)
         self.surf.set_alpha(self.alpha)
         self.surf.fill(self.c)
     def set_x(self, x):
@@ -634,6 +636,7 @@ class Window(SquareGUI):
 
         self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
         self.set_rect(self.surf)
+        self.set_center(self.x, self.y)
         # self.rect.size = (self.w, self.h)
         # self.set_rect(self.surf)
 
@@ -753,7 +756,7 @@ class WindowSetting(Window):
 
     def reset_screen(self, screen):
         super().reset_screen(screen)
-        self.btn1.reset_screen(self.surf)
+        # self.btn1.reset_screen(self.surf)
         
 
     def event_handler(self, event):
@@ -829,10 +832,10 @@ class WindowInventory(Window):
 
     def reset_screen(self, screen):
         super().reset_screen(screen)
-        for b in self.inventory_list:
-            b[0].reset_screen(self.surf)
-            b[1].reset_screen(self.surf)
-            b[2].reset_screen(self.surf)
+        # for b in self.inventory_list:
+        #     b[0].reset_screen(self.surf)
+        #     b[1].reset_screen(self.surf)
+        #     b[2].reset_screen(self.surf)
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -871,7 +874,22 @@ class WindowPlayerInformation(Window):
 
     def reset_screen(self, screen):
         super().reset_screen(screen)
+        # self.btn1.reset_screen(self.surf)
+        # print('========================================', self.btn1.screen_rect, self.btn1.rect)
+
+    def set_wh(self, w, h):
+        self.w = w
+        self.h = h
+
+        self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
+        self.rect.size = self.surf.get_rect().size
+        print(self.rect.size)
+        # self.set_rect(self.surf)
+        # self.set_center(self.x, self.y)
         self.btn1.reset_screen(self.surf)
+        # self.btn1.set_center(*self.btn1.get_center())
+        # self.rect.size = (self.w, self.h)
+        # self.set_rect(self.surf)
 
     def event_handler(self, event):
         super().event_handler(event)
@@ -2289,6 +2307,7 @@ class Game:
         self.window_map.set_topleft(0, 0)
         self.window_player_information.set_wh(350, y)
         self.window_player_information.set_topright(*self.screen_rect.topright)
+
 
         self.gameplay.reset_screen(self.window_map.surf)
 
