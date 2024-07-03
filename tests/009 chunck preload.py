@@ -190,7 +190,7 @@ class SquareGUI:
         self.rect.center = (self.x, y-self.h/2)
     def set_right(self, x):
         self.x=x-self.w/2
-        self.rect.center = (self.w/2, self.y)
+        self.rect.center = (x-self.w/2, self.y)
     def set_left(self, x):
         self.x=x+self.w/2
         self.rect.center = (x+self.w/2, self.y)
@@ -527,6 +527,7 @@ class Button(SquareGUI):
         self.active_f = active_f
     
         self.clicked = False
+        self.clickable = True
         self.motionable = True
 
         self.btn_color = self.c
@@ -541,6 +542,7 @@ class Button(SquareGUI):
 
     def __del__(self):
         del self.clicked
+        del self.clickable
         del self.motionable
         super().__del__()
 
@@ -558,8 +560,9 @@ class Button(SquareGUI):
     def event_handler(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft)):
-                self.clicked = True
-                self.c = self.activate_color
+                if self.clickable:
+                    self.clicked = True
+                    self.c = self.activate_color
         elif event.type == pg.MOUSEBUTTONUP:
             self.clicked = False
             self.c = self.btn_color
@@ -577,6 +580,59 @@ class Button(SquareGUI):
 
         self.surf.blit(self.surf_font, self.rect_font)
         super().render()
+
+class ButtonRange(Button):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=BLACK, activate_color=BLUE, text='', active_f=lambda : ..., **kwargs) -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, activate_color, text, active_f, **kwargs)
+
+        self.range_btn = Button(
+            screen=screen, 
+            screen_rect=screen_rect,
+            x=x,
+            y=y,
+            w=w,
+            h=h,
+            c=activate_color
+        )
+        self.range_btn.motionable = False
+        # self.range_btn.alpha = 64
+        # self.range_btn.surf.set_alpha(self.range_btn.alpha)
+
+    def get_procentage(self):
+        print(self.range_btn.get_wh()[0]/self.get_wh()[0])
+        return self.range_btn.get_wh()[0]/self.get_wh()[0]
+
+    def event_handler(self, event):
+        if event.type == pg.MOUSEBUTTONDOWN:
+            if self.rect.collidepoint(pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft)):
+                if self.clickable:
+                    self.clicked = True
+                    # self.c = self.activate_color
+                    # print(pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft) - pg.math.Vector2(self.rect.topleft))
+                    change_w, change_h = pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft) - pg.math.Vector2(self.rect.topleft)
+                    self.range_btn.set_wh(change_w, self.range_btn.get_wh()[1])
+                    self.get_procentage()
+        elif event.type == pg.MOUSEBUTTONUP:
+            self.clicked = False
+            self.c = self.btn_color
+        if self.clicked:
+            if event.type == pg.MOUSEMOTION and self.motionable:
+                self.set_x(self.x + event.rel[0])
+                self.set_y(self.y + event.rel[1])
+                
+                # self.rect.move_ip(event.rel)
+            self.active_f()
+
+    def render(self):
+        self.screen.blit(self.surf, self.rect)
+        self.surf.fill(self.c)
+
+        super().render()
+        self.range_btn.set_topleft(*self.get_topleft())
+        self.range_btn.render()
+        self.surf.blit(self.surf_font, self.rect_font)
+
+
 
 class MapGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
@@ -760,6 +816,24 @@ class WindowSetting(Window):
             ))
         self.objects[-1].motionable = False
 
+        self.objects.append(
+            ButtonRange(
+                screen=self.surf,
+                screen_rect=self.rect, 
+                x=self.w/2, 
+                y=20, 
+                w=self.w-20, 
+                h=25, 
+                c=BLACK,
+                text=''
+            ))
+        self.objects[-1].motionable = False
+
+
+        for i, o in enumerate(self.objects):
+            o.set_top(10+25*i+2*i)
+
+
     def __del__(self):
         super().__del__()
 
@@ -863,18 +937,16 @@ class WindowPlayerInformation(Window):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
         super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, objects=objects)
 
-        self.objects.append(
-            Button(
-                screen=self.surf,
-                screen_rect=self.rect, 
-                x=self.w/2, 
-                y=20, 
-                w=self.w-20, 
-                h=25, 
-                c=BLACK,
-                text='INFO',
-            ))
-        self.objects[-1].motionable = False
+
+        for i, n in enumerate(['Л. РУКА', 'Л. НОГА', 'П. РУКА', 'П. НОГА', 'ГОЛОВА', 'ТОРС']):
+            self.objects.append(Button(screen=self.surf, screen_rect=self.rect, x=self.w/2, y=20+25*i+2*i, w=100, h=25, c=BLACK,text=n,))
+            self.objects[-1].motionable = False
+            self.objects[-1].set_left(2)
+            self.objects.append(Button(screen=self.surf, screen_rect=self.rect, x=self.w/2, y=20+25*i+2*i, w=100, h=25, c=BLACK,text='|'*20,))
+            self.objects[-1].motionable = False
+            self.objects[-1].set_left(self.objects[-2].get_right()+2)
+
+        
 
     def __del__(self):
         super().__del__()
