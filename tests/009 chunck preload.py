@@ -390,8 +390,11 @@ class HPBarGUI(SquarePhysicalGUI):
         self.reset_hp_w()
     
     def hit_hp(self, val):
-        if not (self.hp - val >= self.hp_max):
+        if not (self.hp - val <= 0):
             self.hp -= val
+            self.reset_hp_w()
+        else:
+            self.hp = 0
             self.reset_hp_w()
 
     def heal_hp(self, val):
@@ -602,6 +605,11 @@ class ButtonRange(Button):
         print(self.range_btn.get_wh()[0]/self.get_wh()[0])
         return self.range_btn.get_wh()[0]/self.get_wh()[0]
 
+    def set_procentage(self, w):
+        # print(self.range_btn.get_wh()[0]/self.get_wh()[0])
+        # return self.range_btn.get_wh()[0]/self.get_wh()[0]
+        self.range_btn.set_wh(w*self.get_wh()[0], self.range_btn.get_wh()[1])
+
     def event_handler(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft)):
@@ -610,7 +618,9 @@ class ButtonRange(Button):
                     # self.c = self.activate_color
                     # print(pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft) - pg.math.Vector2(self.rect.topleft))
                     change_w, change_h = pg.math.Vector2(event.pos) - pg.math.Vector2(self.screen_rect.topleft) - pg.math.Vector2(self.rect.topleft)
-                    self.range_btn.set_wh(change_w, self.range_btn.get_wh()[1])
+                    # self.range_btn.set_wh(change_w, self.range_btn.get_wh()[1])
+                    self.set_procentage(change_w/self.get_wh()[0])
+                    
                     self.get_procentage()
         elif event.type == pg.MOUSEBUTTONUP:
             self.clicked = False
@@ -631,8 +641,6 @@ class ButtonRange(Button):
         self.range_btn.set_topleft(*self.get_topleft())
         self.range_btn.render()
         self.surf.blit(self.surf_font, self.rect_font)
-
-
 
 class MapGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE) -> None:
@@ -942,7 +950,8 @@ class WindowPlayerInformation(Window):
             self.objects.append(Button(screen=self.surf, screen_rect=self.rect, x=self.w/2, y=20+25*i+2*i, w=100, h=25, c=BLACK,text=n,))
             self.objects[-1].motionable = False
             self.objects[-1].set_left(2)
-            self.objects.append(Button(screen=self.surf, screen_rect=self.rect, x=self.w/2, y=20+25*i+2*i, w=100, h=25, c=BLACK,text='|'*20,))
+            # self.objects.append(ButtonRange(screen=self.surf, screen_rect=self.rect, x=self.w/2, y=20+25*i+2*i, w=100, h=25, c=BLACK,text='|'*20,))
+            self.objects.append(ButtonRange(screen=self.surf, screen_rect=self.rect, x=self.w/2, y=20+25*i+2*i, w=100, h=25, c=BLACK, activate_color=RED))
             self.objects[-1].motionable = False
             self.objects[-1].set_left(self.objects[-2].get_right()+2)
 
@@ -987,6 +996,9 @@ class WindowPlayerInformation(Window):
     
     def render(self):
         super().render()
+
+        self.objects[-3].set_procentage(game.gameplay.player.gui.hp_bar.get_hp()/game.gameplay.player.gui.hp_bar.hp_max)
+
         for o in  self.objects:
             o.render()
 
@@ -1755,6 +1767,16 @@ class Mob(Square):
             if self.gui.hp_bar.hp <= 0:
                 self.isAlive = False
                 self.gui.rotate_texture(-90)
+
+        # if self.isAlive:
+        #     if self.gui.hp_bar.hp <= 0:
+        #         self.isAlive = False
+        #         self.gui.rotate_texture(-90)
+        # else:
+        #     if self.gui.hp_bar.hp > 0:
+        #         self.isAlive = True
+        #         self.gui.rotate_texture(90)
+
         
     def move(self):
         if self.isAlive:
@@ -1906,6 +1928,7 @@ class Player(Mob):
         self.inventory[self.chosen_item].render()
         self.move()
         self.dead_handler()
+        print(self.gui.hp_bar.get_hp())
         # print('Plr', self.get_x(), self.get_y())
 
 class KillZone(Mob):
