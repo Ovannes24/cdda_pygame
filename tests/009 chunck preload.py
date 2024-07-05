@@ -385,6 +385,10 @@ class HPBarGUI(SquarePhysicalGUI):
         self.reset_hp_w()
         return self.hp
     
+    def get_hp_max(self):
+        self.reset_hp_w()
+        return self.hp_max
+    
     def set_hp(self, val):
         self.hp = val
         self.reset_hp_w()
@@ -407,6 +411,74 @@ class HPBarGUI(SquarePhysicalGUI):
         # self.hp = (self.hp+val) % (self.hp_max+1)
         # print(self.hp)
         # self.reset_hp_w()    
+
+class HPBars(SquarePhysicalGUI):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=CELL_SIZE, h=2, c=RED, n_bars={'hp1': 100}, **kwargs) -> None:
+        self.n_bars = n_bars
+        super().__init__(screen, screen_rect, x, y, w, h*len(self.n_bars), c, **kwargs)
+        self.hps = {
+            i: HPBarGUI(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, hp=self.n_bars[i]) for i in self.n_bars.keys()
+        }
+
+
+    def relative_scale(self, s, x, y):
+        super().relative_scale(s, x, y)
+        for i in self.hps.keys():
+            self.hps[i].relative_scale(s, x, y)
+
+    def reset_block(self):
+        super().reset_block()
+        for i in self.hps.keys():
+            self.hps[i].reset_block()
+
+    def reset_hp_w(self):
+        for i in self.hps.keys():
+            self.hps[i].reset_hp_w()
+
+
+    def get_hp_names(self):
+        return list(self.n_bars.keys())
+
+    def get_hp(self):
+        # self.reset_hp_w()
+        return np.sum([self.hps[i].get_hp() for i in self.hps.keys()])
+
+    def get_hp_by_name(self, name):
+        # self.reset_hp_w()
+        return self.hps[name].get_hp()
+    
+    def get_hp_max_by_name(self, name):
+        # self.reset_hp_w()
+        return self.hps[name].get_hp_max()
+        
+
+    def get_hp_max(self):
+        # self.reset_hp_w()
+        return np.sum([self.hps[i].get_hp_max() for i in self.hps.keys()])
+
+    def hit_hp(self, val):
+        self.hps[np.random.choice(list(self.hps.keys()))].hit_hp(val)
+
+
+    def heal_hp(self, val):
+        self.hps[np.random.choice(list(self.hps.keys()))].heal_hp(val) 
+
+    def reset_screen(self, screen):
+        super().reset_screen(screen)
+        for i in self.hps.keys():
+            self.hps[i].reset_screen(screen)
+
+
+    def event_handler(self, event):
+        super().event_handler(event)
+        for i in self.hps.keys():
+            self.hps[i].event_handler(event)
+
+    def render(self):
+        for k, i in enumerate(self.hps.keys()):
+            self.hps[i].set_topleft(self.get_topleft()[0], self.get_topleft()[1]+self.h*game.gameplay.player.gui.scale/len(self.n_bars)*k)
+            self.hps[i].render()
+
 
 class TextureSquareGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
@@ -439,15 +511,15 @@ class MobGUI(TextureSquareGUI):
         super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, texture_file=texture_file)
 
         self.render_hp_bar = True
-        self.hp_bar = HPBarGUI(
+        self.hp_bar = HPBars(
             screen, 
             screen_rect, 
             x=self.get_xy()[0], 
             y=self.get_xy()[1], 
             w=self.w, 
             h=4, 
-            c=RED, 
-            hp=100 
+            c=RED,
+            n_bars={'Л. РУКА': 50, 'Л. НОГА': 50, 'П. РУКА': 50, 'П. НОГА': 50, 'ГОЛОВА': 100, 'ТОРС': 100}
         )
 
     def __del__(self):
@@ -502,8 +574,6 @@ class MobGUI(TextureSquareGUI):
         # self.surf = self.surf_origin
         # self.set_rect(self.surf)
 
-
-
     def event_handler(self, event):
         super().event_handler(event)
         self.hp_bar.event_handler(event)
@@ -515,6 +585,20 @@ class MobGUI(TextureSquareGUI):
             self.hp_bar.set_bottomleft(*self.get_topleft())
             self.hp_bar.render()
         self.zoom()
+
+class KillZoneGUI(MobGUI):
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
+        super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, texture_file)
+        self.hp_bar = HPBars(
+            screen, 
+            screen_rect, 
+            x=self.get_xy()[0], 
+            y=self.get_xy()[1], 
+            w=self.w, 
+            h=4, 
+            c=RED,
+            n_bars={'ЗОНА': 100}
+        )
 
 class CursorGUI(TextureSquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/cursor.png') -> None:
@@ -609,6 +693,10 @@ class ButtonRange(Button):
         # print(self.range_btn.get_wh()[0]/self.get_wh()[0])
         # return self.range_btn.get_wh()[0]/self.get_wh()[0]
         self.range_btn.set_wh(w*self.get_wh()[0], self.range_btn.get_wh()[1])
+
+    def reset_screen(self, screen):
+        self.screen = screen
+        self.range_btn.screen = screen
 
     def event_handler(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -942,11 +1030,12 @@ class WindowInventory(Window):
             o.render()
 
 class WindowPlayerInformation(Window):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[]) -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[], game=None) -> None:
         super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, objects=objects)
+        self.___game = game
 
-
-        for i, n in enumerate(['Л. РУКА', 'Л. НОГА', 'П. РУКА', 'П. НОГА', 'ГОЛОВА', 'ТОРС']):
+        # for i, n in enumerate(['Л. РУКА', 'Л. НОГА', 'П. РУКА', 'П. НОГА', 'ГОЛОВА', 'ТОРС']):
+        for i, n in enumerate(game.gameplay.player.gui.hp_bar.get_hp_names()):
             self.objects.append(Button(screen=self.surf, screen_rect=self.rect, x=self.w/2, y=20+25*i+2*i, w=100, h=25, c=BLACK,text=n,))
             self.objects[-1].motionable = False
             self.objects[-1].set_left(2)
@@ -960,10 +1049,21 @@ class WindowPlayerInformation(Window):
     def __del__(self):
         super().__del__()
 
+    def set_wh(self, w, h):
+        super().set_wh(w, h)
+        for i in range(len(self.objects)):
+            tl = self.objects[i].get_topleft()
+            self.objects[i].reset_screen(self.surf)
+            self.objects[i].set_topleft(*tl)
+
     def reset_screen(self, screen):
         super().reset_screen(screen)
         self.set_wh(self.w, self.screen_rect.height)
         self.set_topright(*self.screen_rect.topright) 
+        # for i in range(len(self.objects)):
+        #     tl = self.objects[i].get_topleft()
+        #     self.objects[i].reset_screen(self.surf)
+        #     self.objects[i].set_topleft(*tl)
         # print(self.rect)
     
     def set_rect(self, surf):
@@ -997,7 +1097,10 @@ class WindowPlayerInformation(Window):
     def render(self):
         super().render()
 
-        self.objects[-3].set_procentage(game.gameplay.player.gui.hp_bar.get_hp()/game.gameplay.player.gui.hp_bar.hp_max)
+        # self.objects[-3].set_procentage(game.gameplay.player.gui.hp_bar.get_hp()/game.gameplay.player.gui.hp_bar.get_hp_max())
+
+        for i, n in enumerate(self.___game.gameplay.player.gui.hp_bar.get_hp_names()):
+            self.objects[i*2+1].set_procentage(game.gameplay.player.gui.hp_bar.get_hp_by_name(n)/game.gameplay.player.gui.hp_bar.get_hp_max_by_name(n))
 
         for o in  self.objects:
             o.render()
@@ -1764,7 +1867,7 @@ class Mob(Square):
 
     def dead_handler(self):
         if self.isAlive:
-            if self.gui.hp_bar.hp <= 0:
+            if self.gui.hp_bar.get_hp() <= 0:
                 self.isAlive = False
                 self.gui.rotate_texture(-90)
 
@@ -1928,12 +2031,22 @@ class Player(Mob):
         self.inventory[self.chosen_item].render()
         self.move()
         self.dead_handler()
-        print(self.gui.hp_bar.get_hp())
+        # print(self.gui.hp_bar.get_hp())
         # print('Plr', self.get_x(), self.get_y())
 
 class KillZone(Mob):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, hp_changer=1) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
+
+        self.gui = KillZoneGUI(
+            screen=screen,
+            screen_rect=screen_rect,
+            x=self.x*32,
+            y=self.y*32,
+            w=self.w*32,
+            h=self.h*32,
+            c=GREEN
+        )
 
         self.hp_changer = hp_changer
 
@@ -1959,6 +2072,16 @@ class KillZone(Mob):
 class HealZone(Mob):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
+        
+        self.gui = KillZoneGUI(
+            screen=screen,
+            screen_rect=screen_rect,
+            x=self.x*32,
+            y=self.y*32,
+            w=self.w*32,
+            h=self.h*32,
+            c=GREEN
+        )
 
         self.hp_changer = 1
 
@@ -2372,7 +2495,8 @@ class Game:
             h=self.screen_rect.height,
             c=BLACK,
             alpha=255,
-            objects=[]
+            objects=[],
+            game=self
         )
         self.window_player_information.set_topright(*self.screen_rect.topright)
 
