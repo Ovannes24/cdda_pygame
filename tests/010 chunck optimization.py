@@ -35,8 +35,29 @@ FONT = None
 FONT_SIZE = 20
 
 MAP_SIZE = (16, 24)
-# block_floor_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
-block_floor_id = np.array([
+# block_center_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
+
+
+block_bottom_id = np.array([
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+])
+
+block_center_id = np.array([
     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
@@ -1317,7 +1338,7 @@ class Square:
             #         self.set_bottom(square.get_top())
 
 class Block(Square):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None,  id=0) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None,  id=0, z_level='center') -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
 
         self.id = id
@@ -1327,16 +1348,28 @@ class Block(Square):
         self.time = 1
         self.speed = self.time * 0.1
 
-        self.gui = BlockGUI(
-            screen=screen,
-            screen_rect=screen_rect,
-            x=x*32,
-            y=y*32,
-            w=w*32,
-            h=h*32,
-            c=[BLUE, RED][self.id],
-            texture_file=['./tiles/grass.png', './tiles/block.png'][self.id]
-        )
+        if z_level=='center':
+            self.gui = BlockGUI(
+                screen=screen,
+                screen_rect=screen_rect,
+                x=x*32,
+                y=y*32,
+                w=w*32,
+                h=h*32,
+                c=BLUE,
+                texture_file=f'./tiles/blocks/center/{self.id:08d}.png'
+            )
+        elif z_level=='bottom':
+            self.gui = BlockGUI(
+                screen=screen,
+                screen_rect=screen_rect,
+                x=x*32,
+                y=y*32,
+                w=w*32,
+                h=h*32,
+                c=RED,
+                texture_file=f'./tiles/blocks/bottom/{self.id:08d}.png'
+            )
 
     def __del__(self):
         del self.id
@@ -1358,7 +1391,7 @@ class Block(Square):
 
 class Blocks(Square):
     def __init__(self, screen=None, screen_rect=None) -> None:
-        self.block_floor_id = block_floor_id
+        self.block_center_id = block_center_id
         
         self.screen = screen
         self.screen_rect = screen_rect
@@ -1382,18 +1415,18 @@ class Blocks(Square):
             zip(
                 self.yx_indexes, 
                 (
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
                     
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
-                    [self.block_floor_id, self.block_floor_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
+                    [self.block_center_id, self.block_center_id.copy().astype(object)],
                 )
             )
         )
@@ -1427,15 +1460,19 @@ class Chunck(Block):
 
         self.set_topleft(self.x*16, self.y*16)
 
-        # self.block_floor_id = block_floor_id
-        self.block_floor_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_floor_id
+        self.block_bottom_id = block_bottom_id
+
+        # self.block_center_id = block_center_id
+        # self.block_center_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_center_id
+        self.block_center_id = np.max(np.array([np.random.choice([0, 1, 2, 3, 4], (16, 16), p=[0.9]+[0.1/4]*4),  block_center_id]), axis=0)
         
         
-        self.blocks = self.block_floor_id.copy().astype(object)
+        self.blocks = self.block_center_id.copy().astype(object)
+        self.blocks_bottom = self.block_bottom_id.copy().astype(object)
 
         self.tmp_surf = pg.Surface((self.w*32, self.h*32)).convert_alpha()
 
-        self.yx_not_nan = np.argwhere(self.block_floor_id != np.nan)
+        self.yx_not_nan = np.argwhere(self.block_center_id != np.nan)
         # for i, j in self.yx_not_nan:
         #     self.blocks[i, j] = Block(
         #         x=j+self.get_topleft()[0],
@@ -1444,7 +1481,7 @@ class Chunck(Block):
         #         h=1,
         #         screen=screen, 
         #         screen_rect=screen_rect,
-        #         id=self.block_floor_id[i, j] 
+        #         id=self.block_center_id[i, j] 
         #     )
 
         #     self.tmp_surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
@@ -1459,14 +1496,33 @@ class Chunck(Block):
                 h=1,
                 screen=screen, 
                 screen_rect=screen_rect,
-                id=self.block_floor_id[i, j] 
+                id=self.block_center_id[i, j] 
             )
             
         vec_set_blocks(self.yx_not_nan[:, 0], self.yx_not_nan[:, 1])
 
         @np.vectorize
+        def vec_set_blocks_bottom(i, j):
+            self.blocks_bottom[i, j] = Block(
+                x=j+self.get_topleft()[0],
+                y=i+self.get_topleft()[1],
+                w=1,
+                h=1,
+                screen=screen, 
+                screen_rect=screen_rect,
+                id=self.block_bottom_id[i, j],
+                z_level='bottom'
+            )
+            
+        vec_set_blocks_bottom(self.yx_not_nan[:, 0], self.yx_not_nan[:, 1])
+
+
+
+        @np.vectorize
         def vec_blit_blocks(i, j):
+            self.tmp_surf.blit(self.blocks_bottom[i, j].gui.surf, (j*32, i*32))
             self.tmp_surf.blit(self.blocks[i, j].gui.surf, (j*32, i*32))
+            
 
         vec_blit_blocks(self.yx_not_nan[:, 0], self.yx_not_nan[:, 1])
         # for i, j in self.yx_not_nan:
@@ -1496,11 +1552,11 @@ class Chunck(Block):
 
 
     def get_not_nan_blocks(self):
-        return np.argwhere(self.block_floor_id != np.nan) +  np.array([self.get_topleft()[1], self.get_topleft()[0]])
+        return np.argwhere(self.block_center_id != np.nan) +  np.array([self.get_topleft()[1], self.get_topleft()[0]])
 
     def get_collidable_blocks(self):
-        # print(np.argwhere(self.block_floor_id == 1) + np.array([self.y, self.x]))
-        return np.argwhere(self.block_floor_id == 1) + np.array([self.get_topleft()[1], self.get_topleft()[0]])
+        # print(np.argwhere(self.block_center_id == 1) + np.array([self.y, self.x]))
+        return np.argwhere(self.block_center_id >= 1) + np.array([self.get_topleft()[1], self.get_topleft()[0]])
 
 
     def move(self):
@@ -1520,8 +1576,8 @@ class Map(Square):
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
 
         mx, my = np.meshgrid(
-            np.arange(-3, 3+1),
-            np.arange(-3, 3+1)
+            np.arange(-2, 2+1),
+            np.arange(-2, 2+1)
         )
         mx, my = mx.reshape(-1), my.reshape(-1)
         self.mxmy = np.array([my, mx]).T
@@ -1572,13 +1628,13 @@ class Map(Square):
         self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
 
         # print(self.collidable)
-        self.block_floor_id = block_floor_id
+        self.block_center_id = block_center_id
 
         self.count_frame_render_const = 5
         self.count_frame_render = self.count_frame_render_const
 
     def __del__(self):
-        # del self.block_floor_id
+        # del self.block_center_id
         # for i, j in self.not_nan:
         #     del self.chuncks[i, j]
         # del self.chuncks
@@ -2403,9 +2459,9 @@ class GamePlay:
         self.player.gui.set_y(self.screen_rect.height/2)
         
     def collide(self):
-        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
+        # for i, j in np.argwhere(self.map.block_center_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
         #     self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
-        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
+        # for i, j in np.argwhere(self.map.block_center_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
         #     self.heal_zone.collision(self.map.blocks[int(np.rint(self.heal_zone.y))+i-1, int(np.rint(self.heal_zone.x))+j-1])
 
 
