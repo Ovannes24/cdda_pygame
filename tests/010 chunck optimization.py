@@ -42,7 +42,7 @@ block_floor_id = np.array([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
@@ -579,10 +579,10 @@ class MobGUI(TextureSquareGUI):
 
     def render(self):
         # self.screen.blit(self.surf, self.rect)
-        super().render()
         if self.render_hp_bar:
             self.hp_bar.set_bottomleft(*self.get_topleft())
             self.hp_bar.render()
+        super().render()
         self.zoom()
 
 class KillZoneGUI(MobGUI):
@@ -1427,8 +1427,8 @@ class Chunck(Block):
 
         self.set_topleft(self.x*16, self.y*16)
 
-        self.block_floor_id = block_floor_id
-        # self.block_floor_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_floor_id
+        # self.block_floor_id = block_floor_id
+        self.block_floor_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_floor_id
         
         
         self.blocks = self.block_floor_id.copy().astype(object)
@@ -1620,7 +1620,7 @@ class Map(Square):
                     self.del_indexes
                 ]
                 tmp_index1, _, counts1 = np.unique(tmp_index1, return_counts=True, return_index=True, axis=0)
-                print(counts, counts1)
+                # print(counts, counts1)
                 self.del_indexes = tmp_index1[counts1 == 2]
 
             # print(self.add_indexes)
@@ -1668,7 +1668,7 @@ class Map(Square):
         #     self.chunck_load = False
 
     def update_chunck_render(self):
-        print(self.count_frame_render)
+        # print(self.count_frame_render)
         if len(self.add_indexes) != 0 and len(self.del_indexes) != 0:
             self.count_frame_render -= 1
             if self.count_frame_render==0:
@@ -2403,10 +2403,10 @@ class GamePlay:
         self.player.gui.set_y(self.screen_rect.height/2)
         
     def collide(self):
-        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
-            self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
-        for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
-            self.heal_zone.collision(self.map.blocks[int(np.rint(self.heal_zone.y))+i-1, int(np.rint(self.heal_zone.x))+j-1])
+        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.kill_zone.y))-1:int(np.rint(self.kill_zone.y))+1+1, int(np.rint(self.kill_zone.x))-1:int(np.rint(self.kill_zone.x))+1+1] == 1):
+        #     self.kill_zone.collision(self.map.blocks[int(np.rint(self.kill_zone.y))+i-1, int(np.rint(self.kill_zone.x))+j-1])
+        # for i, j in np.argwhere(self.map.block_floor_id[int(np.rint(self.heal_zone.y))-1:int(np.rint(self.heal_zone.y))+1+1, int(np.rint(self.heal_zone.x))-1:int(np.rint(self.heal_zone.x))+1+1] == 1):
+        #     self.heal_zone.collision(self.map.blocks[int(np.rint(self.heal_zone.y))+i-1, int(np.rint(self.heal_zone.x))+j-1])
 
 
 
@@ -2419,6 +2419,12 @@ class GamePlay:
             # print(self.player.y, self.player.x, self.map[i, j].x, self.map[i, j].y)
             if self.player.collidesquare(self.map[i, j]):
                 self.player.collision(self.map[i, j])
+        
+        for i, j in get_closest_collidable_object(self.map.collidable, np.array([self.kill_zone.y, self.kill_zone.x])):
+            # print(self.player.y, self.player.x, self.map[i, j].x, self.map[i, j].y)
+            if self.kill_zone.collidesquare(self.map[i, j]):
+                self.kill_zone.collision(self.map[i, j])
+        
         
 
         for mob in range(self.n_mobs):
@@ -2455,6 +2461,67 @@ class GamePlay:
             if self.heal_zone.collidesquare(self.mobs[mob]):
                 self.mobs[mob].gui.hp_bar.heal_hp(self.heal_zone.hp_changer)
 
+    def shadow(self):
+        pp = np.array(self.player.get_center())
+        cp = np.array(self.cursor.get_center())
+        center_p = np.array([self.screen_rect.width/2, self.screen_rect.height/2])
+        cam_p = np.array(self.camera.get_center())
+        # pg.draw.line(self.screen, BLACK, cp*32+center_p, center_p)
+
+        # bp = np.array([0, 0])
+        # pg.draw.line(self.screen, BLACK, cp*32+center_p, (bp-pp)*32*self.player.gui.scale+center_p)
+
+        # for xy in self.map.collidable[504:505, ::-1]:
+        # for xy in self.map.collidable[::100, ::-1]:
+        #     bp = np.array(xy)
+        #     # pg.draw.line(self.screen, BLACK, cp*32+center_p, (bp-pp)*32*self.player.gui.scale+center_p)
+        #     # pg.draw.line(self.screen, BLACK, center_p, (bp-pp)*32*self.player.gui.scale+center_p)
+            
+        #     sp = (bp-pp)*32*self.player.gui.scale+center_p
+
+        #     ep = 200*(sp-center_p)+center_p
+        #     # if np.prod(200*(sp-center_p)+center_p)<0:
+        #     #     ep = np.max([200*(sp-center_p)+center_p, np.array([self.screen_rect.width, self.screen_rect.height])], axis=0)
+        #     # else:
+        #     #     ep = np.min([200*(sp-center_p)+center_p, np.array([self.screen_rect.width, self.screen_rect.height])], axis=0)
+        #     pg.draw.line(self.screen, WHITE, sp, ep, int(32*self.player.gui.scale))
+
+
+        # def vec_shadow(xy):
+        #     points = []
+        #     bp = np.array(xy)+np.array([[-0.5, -0.5], [-0.5, +0.5], [+0.5, -0.5], [+0.5, +0.5]])
+
+        #     sp = (bp-pp)*32*self.player.gui.scale+center_p
+        #     ep = 5*(sp-center_p)+center_p
+            
+        #     sp_sum = np.sum((sp-center_p)**2, axis=1)
+        #     arg_sp_sum = np.argsort(sp_sum)
+        #     sp = sp[arg_sp_sum][1:]
+        #     ep = ep[arg_sp_sum][1:]
+
+        #     pg.draw.polygon(self.screen, WHITE, np.r_[sp[[0,2,1]], ep[[1,2,0]]])
+
+        # vec_shadow(self.map.collidable[::1, ::-1])      
+        
+
+
+        # for xy in self.map.collidable[528+7:529+7, ::-1]:
+        # shadow_points = self.map.collidable[::1, ::-1]
+        for xy in self.map.collidable[::50, ::-1]:
+            points = []
+            bp = np.array(xy)+np.array([[-0.5, -0.5], [-0.5, +0.5], [+0.5, -0.5], [+0.5, +0.5]])
+
+            sp = (bp-pp)*32*self.player.gui.scale*0.995+center_p
+            ep = 5*(sp-center_p)+center_p
+            
+            sp_sum = np.sum((sp-center_p)**2, axis=1)
+            arg_sp_sum = np.argsort(sp_sum)
+            sp = sp[arg_sp_sum][1:]
+            ep = ep[arg_sp_sum][1:]
+
+                
+            pg.draw.polygon(self.screen, BLACK, np.r_[sp[[0,2,1]], ep[[1,2,0]]])
+
     def event_handler(self, event):
         
         self.map.event_handler(event)
@@ -2486,6 +2553,8 @@ class GamePlay:
         
         for o in range(self.n_objects):
             self.objects[o].render()
+
+        self.shadow()
 
         self.player.render()
         self.cursor.render()
