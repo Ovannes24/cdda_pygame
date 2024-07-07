@@ -1427,8 +1427,9 @@ class Chunck(Block):
 
         self.set_topleft(self.x*16, self.y*16)
 
-        # self.block_floor_id = block_floor_id
-        self.block_floor_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_floor_id
+        self.block_floor_id = block_floor_id
+        # self.block_floor_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_floor_id
+        
         
         self.blocks = self.block_floor_id.copy().astype(object)
 
@@ -1523,7 +1524,8 @@ class Map(Square):
             np.arange(-3, 3+1)
         )
         mx, my = mx.reshape(-1), my.reshape(-1)
-        self.yx_indexes = np.array([my, mx]).T
+        self.mxmy = np.array([my, mx]).T
+        self.yx_indexes = self.mxmy
         self.add_indexes = np.array([])
         self.del_indexes = np.array([])
         self.chunck_load = False
@@ -1572,6 +1574,9 @@ class Map(Square):
         # print(self.collidable)
         self.block_floor_id = block_floor_id
 
+        self.count_frame_render_const = 5
+        self.count_frame_render = self.count_frame_render_const
+
     def __del__(self):
         # del self.block_floor_id
         # for i, j in self.not_nan:
@@ -1593,37 +1598,54 @@ class Map(Square):
             
             tmp_index = np.r_[
                 self.yx_indexes, 
-                self.yx_indexes+(np.array(game.gameplay.player.chunck_pos) - past_player_chunck_pos), 
-                self.yx_indexes+(np.array(game.gameplay.player.chunck_pos) - past_player_chunck_pos)
+                self.mxmy + past_player_chunck_pos+(np.array(game.gameplay.player.chunck_pos) - past_player_chunck_pos), 
+                self.mxmy + past_player_chunck_pos+(np.array(game.gameplay.player.chunck_pos) - past_player_chunck_pos)
             ]
 
             tmp_index, _, counts = np.unique(tmp_index, return_counts=True, return_index=True, axis=0)
 
+            # print(self.add_indexes, tmp_index[counts == 2])
+
             self.add_indexes = tmp_index[counts == 2]
             self.del_indexes = tmp_index[counts == 1]
+            # print(tmp_index, _, counts)
+            if len(self.add_indexes) == 0:
+                self.add_indexes = tmp_index[counts == 2]
+                self.del_indexes = tmp_index[counts == 1]
+            else:  
+                self.add_indexes = np.unique(np.r_[self.add_indexes, tmp_index[counts == 2]], axis=0)
+                tmp_index1 = np.r_[
+                    self.add_indexes, 
+                    self.del_indexes,
+                    self.del_indexes
+                ]
+                tmp_index1, _, counts1 = np.unique(tmp_index1, return_counts=True, return_index=True, axis=0)
+                print(counts, counts1)
+                self.del_indexes = tmp_index1[counts1 == 2]
 
-            self.chunck_load = True
-            for i in self.del_indexes:
-                self.del_chunck(tuple(i))
-            for i in self.add_indexes:
-                self.add_chunck(tuple(i))
+            # print(self.add_indexes)
+            # self.chunck_load = True
+            # for i in self.del_indexes:
+            #     self.del_chunck(tuple(i))
+            # for i in self.add_indexes:
+            #     self.add_chunck(tuple(i))
 
-            # @np.vectorize
-            # def vec_add_chunck(i):
-            #     self.add_chunck((i,j))
-            # vec_add_chunck(self.add_indexes[:, 0],self.add_indexes[:, 1])
+            # # @np.vectorize
+            # # def vec_add_chunck(i):
+            # #     self.add_chunck((i,j))
+            # # vec_add_chunck(self.add_indexes[:, 0],self.add_indexes[:, 1])
 
-            # vec_del_indexes = np.vectorize(lambda i, j: self.del_chunck((i, j)))
-            # vec_del_indexes(self.del_indexes[:, 0], self.del_indexes[:, 1])
-            # vec_add_chunck = np.vectorize(lambda i, j: self.add_chunck((i, j)))
-            # vec_add_chunck(self.add_indexes[:, 0], self.add_indexes[:, 1])
+            # # vec_del_indexes = np.vectorize(lambda i, j: self.del_chunck((i, j)))
+            # # vec_del_indexes(self.del_indexes[:, 0], self.del_indexes[:, 1])
+            # # vec_add_chunck = np.vectorize(lambda i, j: self.add_chunck((i, j)))
+            # # vec_add_chunck(self.add_indexes[:, 0], self.add_indexes[:, 1])
 
-            self.not_nan = []
-            for i, c in enumerate(self.chuncks):
-                self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
-            self.not_nan = np.array(self.not_nan)
-            self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
-            self.chunck_load = False
+            # self.not_nan = []
+            # for i, c in enumerate(self.chuncks):
+            #     self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+            # self.not_nan = np.array(self.not_nan)
+            # self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+            # self.chunck_load = False
 
         # # if len(self.del_indexes) != 0 and np.random.choice([True, False], p=[0.15, 1-0.15]):
         # if len(self.del_indexes) != 0:  
@@ -1645,6 +1667,28 @@ class Map(Square):
         #     self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
         #     self.chunck_load = False
 
+    def update_chunck_render(self):
+        print(self.count_frame_render)
+        if len(self.add_indexes) != 0 and len(self.del_indexes) != 0:
+            self.count_frame_render -= 1
+            if self.count_frame_render==0:
+                self.chunck_load = True
+                i = self.del_indexes[0]
+                self.del_chunck(tuple(i))
+                self.del_indexes = self.del_indexes[1:]
+
+                i = self.add_indexes[0]
+                self.add_chunck(tuple(i))
+                self.add_indexes = self.add_indexes[1:]
+
+                self.not_nan = []
+                for i, c in enumerate(self.chuncks):
+                    self.not_nan.append(self.chuncks[c].get_not_nan_blocks())
+                self.not_nan = np.array(self.not_nan)
+                self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
+                self.chunck_load = False
+
+                self.count_frame_render = self.count_frame_render_const
 
 
     def del_chunck(self, yx_index):
@@ -1687,12 +1731,6 @@ class Map(Square):
         # self.not_nan = np.array(self.not_nan)
         # self.collidable = np.r_[tuple([self.chuncks[c].get_collidable_blocks() for i, c in enumerate(self.chuncks)])]
 
-
-
-
-
-
-
     def __getitem__(self, xy):
         y, x = xy
         return self.chuncks[int(y//16), int(x//16)].blocks[int(y % 16), int(x % 16)]
@@ -1720,6 +1758,7 @@ class Map(Square):
 
     def render(self):
         self.check_chunck_render()
+        self.update_chunck_render()
         for i, c in enumerate(self.chuncks):
             self.chuncks[c].render()
         
