@@ -1630,7 +1630,7 @@ class Map(Square):
         # print(self.collidable)
         self.block_center_id = block_center_id
 
-        self.count_frame_render_const = 5
+        self.count_frame_render_const = 15
         self.count_frame_render = self.count_frame_render_const
 
     def __del__(self):
@@ -1883,6 +1883,9 @@ class Item(Square):
         if self.isActivate:
             self.isActivate = False
             if self.type == 'gun':
+                snd = pg.mixer.Sound(f'./sounds/guns/9mm/9mm_{np.random.randint(1,5+1)}.ogg')
+                snd.set_volume(0.3)
+                snd.play()
                 blt = Bullet(
                     x=game.gameplay.player.x, 
                     y=game.gameplay.player.y, 
@@ -1916,8 +1919,6 @@ class Item(Square):
                 game.gameplay.add_object(blt)
             elif self.type == 'food':
                 self.owner.gui.hp_bar.heal_hp(100)   
-
-            
 
     def get_chunck_pos_yx(self):
         return int(self.y//16), int(self.x//16)
@@ -2331,10 +2332,10 @@ class GamePlay:
         self.screen_rect = screen_rect
         
         self.map = Map(screen=screen, screen_rect=screen_rect)
-        print('collidable:', len(self.map.collidable))
-        with open('test.npy', 'wb') as f:
-            print('save')
-            np.save(f, self.map.collidable)
+        # print('collidable:', len(self.map.collidable))
+        # with open('test.npy', 'wb') as f:
+        #     print('save')
+        #     np.save(f, self.map.collidable)
 
         self.mobs = []
         self.n_mobs = 10
@@ -2352,8 +2353,8 @@ class GamePlay:
         
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
         # self.player.speed = 0.37
-        # self.player.speed = 0.27
-        self.player.speed = 0.07
+        self.player.speed = 0.27
+        # self.player.speed = 0.07
         
         
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
