@@ -2570,8 +2570,8 @@ class GamePlay:
         # for xy in self.map.collidable[528+7:529+7, ::-1]:
         # shadow_points = self.map.collidable[::1, ::-1]
         xy_list = self.map.collidable[::1, ::-1]
-        xy_list = xy_list[np.argsort(np.sum((xy_list-pp)**2, axis=1))][:100]
-        print(xy_list[0], pp)
+        xy_list = xy_list[np.argsort(np.sum((xy_list-pp)**2, axis=1))][:200]
+        # print(xy_list[0], pp)
 
         for i, _xy in enumerate(xy_list):
             points = []
@@ -2593,14 +2593,25 @@ class GamePlay:
 
             polygons.append(np.r_[sp[[0,2,1]], ep[[1,2,0]]])
 
-            angles = np.arctan2(*xy_list[:, ::-1].T)
-            angle1, angle2 = np.sort(np.arctan2(*sp[[0,1]][:, ::-1].T))
+            xy_list_scaled = (xy_list-pp)*32*self.player.gui.scale
+            angles = np.arctan2(*xy_list_scaled[:, ::-1].T)
+            pg.draw.line(self.screen, GREEN, xy_list_scaled[0]+center_p, xy_list_scaled[0]+center_p+50*np.array([np.cos(angles[0]), np.sin(angles[0])]), 10)
+            pg.draw.circle(self.screen, GREEN, xy_list_scaled[0]+center_p, 5)
+
+            angle1, angle2 = np.arctan2(*((-sp[[0,1]] + ep[[0,1]])[:, ::-1].T))
+            # print(sp[[0,1]][:, ::-1].T.shape)
             # print(sp[[0,2,1]], *sp[[0,2,1]][:, ::-1].T)
             # angle1, angle2 = (np.arctan2(*sp[[1,0]][:, ::-1].T))
             
-            xy_list = np.concatenate([xy_list[:i+1], xy_list[~((angle1-np.pi/2 < angles) & (angles < angle2+np.pi/2))][i+1:]])
+            xy_list = np.concatenate([xy_list[:i+1], xy_list[~((angle1 < angles) & (angles < angle2))][i+1:]])
             
-            # print(angle1 < angle2, (angles[-1] < angle2), (angle1 < angles[-1]), (angles[-1] < angle2) & (angle1 < angles[-1]), i, len(xy_list))
+            pg.draw.line(self.screen, RED, sp[0], sp[0]+50*np.array([np.cos(angle1), np.sin(angle1)]), 10)
+            pg.draw.line(self.screen, BLUE, sp[1], sp[1]+50*np.array([np.cos(angle2), np.sin(angle2)]), 10)
+            pg.draw.circle(self.screen, RED, sp[0], 5)
+            pg.draw.circle(self.screen, BLUE, sp[1], 5)
+            
+            
+            print(angle1 < angle2, (angles[-1] < angle2), (angle1 < angles[-1]), (angles[-1] < angle2) & (angle1 < angles[-1]), i, len(xy_list))
             # print(i, angle1, angle2, angles[np.argsort((angles-angle1)**2)][:5])
 
 
@@ -2640,7 +2651,7 @@ class GamePlay:
         for o in range(self.n_objects):
             self.objects[o].render()
 
-        self.shadow()
+        # self.shadow()
 
         self.player.render()
         self.cursor.render()
