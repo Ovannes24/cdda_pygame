@@ -1462,9 +1462,9 @@ class Chunck(Block):
 
         self.block_bottom_id = block_bottom_id
 
-        # self.block_center_id = block_center_id
+        self.block_center_id = block_center_id
         # self.block_center_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_center_id
-        self.block_center_id = np.max(np.array([np.random.choice([0, 1, 2, 3, 4], (16, 16), p=[0.9]+[0.1/4]*4),  block_center_id]), axis=0)
+        # self.block_center_id = np.max(np.array([np.random.choice([0, 1, 2, 3, 4], (16, 16), p=[0.9]+[0.1/4]*4),  block_center_id]), axis=0)
         
         
         self.blocks = self.block_center_id.copy().astype(object)
@@ -2331,6 +2331,10 @@ class GamePlay:
         self.screen_rect = screen_rect
         
         self.map = Map(screen=screen, screen_rect=screen_rect)
+        print('collidable:', len(self.map.collidable))
+        with open('test.npy', 'wb') as f:
+            print('save')
+            np.save(f, self.map.collidable)
 
         self.mobs = []
         self.n_mobs = 10
@@ -2348,7 +2352,9 @@ class GamePlay:
         
         self.player = Player(x=1, y=1, screen=screen, screen_rect=screen_rect)
         # self.player.speed = 0.37
-        self.player.speed = 0.27
+        # self.player.speed = 0.27
+        self.player.speed = 0.07
+        
         
         self.camera = Camera(x=screen_rect.width/2, y=screen_rect.height/2, screen=screen, screen_rect=screen_rect)
         self.cursor = Cursor(x=1, y=1, screen=screen, screen_rect=screen_rect)
@@ -2560,11 +2566,21 @@ class GamePlay:
         # vec_shadow(self.map.collidable[::1, ::-1])      
         
 
-
+        polygons = []
         # for xy in self.map.collidable[528+7:529+7, ::-1]:
         # shadow_points = self.map.collidable[::1, ::-1]
-        for xy in self.map.collidable[::50, ::-1]:
+        xy_list = self.map.collidable[::1, ::-1]
+        xy_list = xy_list[np.argsort(np.sum((xy_list-pp)**2, axis=1))][:100]
+        print(xy_list[0], pp)
+
+        for i, _xy in enumerate(xy_list):
             points = []
+
+            if i >= len(xy_list):
+                break
+
+            xy = xy_list[i]
+
             bp = np.array(xy)+np.array([[-0.5, -0.5], [-0.5, +0.5], [+0.5, -0.5], [+0.5, +0.5]])
 
             sp = (bp-pp)*32*self.player.gui.scale*0.995+center_p
@@ -2575,8 +2591,22 @@ class GamePlay:
             sp = sp[arg_sp_sum][1:]
             ep = ep[arg_sp_sum][1:]
 
-                
-            pg.draw.polygon(self.screen, BLACK, np.r_[sp[[0,2,1]], ep[[1,2,0]]])
+            polygons.append(np.r_[sp[[0,2,1]], ep[[1,2,0]]])
+
+            angles = np.arctan2(*xy_list[:, ::-1].T)
+            angle1, angle2 = np.sort(np.arctan2(*sp[[0,1]][:, ::-1].T))
+            # print(sp[[0,2,1]], *sp[[0,2,1]][:, ::-1].T)
+            # angle1, angle2 = (np.arctan2(*sp[[1,0]][:, ::-1].T))
+            
+            xy_list = np.concatenate([xy_list[:i+1], xy_list[~((angle1-np.pi/2 < angles) & (angles < angle2+np.pi/2))][i+1:]])
+            
+            # print(angle1 < angle2, (angles[-1] < angle2), (angle1 < angles[-1]), (angles[-1] < angle2) & (angle1 < angles[-1]), i, len(xy_list))
+            # print(i, angle1, angle2, angles[np.argsort((angles-angle1)**2)][:5])
+
+
+        for p in polygons:
+            pg.draw.polygon(self.screen, BLACK, p, 3)
+        # pg.draw.polygon(self.screen, BLACK, np.random.choice(np.arange(0, 500), (1129*6, 2)))
 
     def event_handler(self, event):
         
