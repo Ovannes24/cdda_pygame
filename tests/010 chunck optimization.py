@@ -31,8 +31,9 @@ CELL_SIZE = 32
 
 FPS = 60
 
-FONT = None
-FONT_SIZE = 20
+# FONT = None
+FONT = './font/unifont.ttf'
+FONT_SIZE = 14
 
 MAP_SIZE = (16, 24)
 # block_center_id = np.random.choice([0, 1], (MAP_SIZE), p=[0.8, 0.2])
