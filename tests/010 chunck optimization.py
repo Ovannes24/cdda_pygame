@@ -168,6 +168,8 @@ class SquareGUI:
         self.h = h
         self.surf = pg.transform.scale(self.surf_origin, (self.w, self.h))
         self.set_rect(self.surf)
+    def set_color(self, c):
+        self.c = c
 
     def get_xy(self):
         return self.x, self.y
@@ -450,7 +452,12 @@ class HPBars(SquarePhysicalGUI):
         # self.hps = {
         #     i: HPBarGUI(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, hp=self.n_bars[i]) for i in self.n_bars.keys()
         # }
+        
         self.set_hp_bars(self.n_bars)
+
+        # self.set_color(BLACK)
+        # self.render_bc = False
+        # self.render_color = False
 
     def set_hp_bars(self, n_bars):
         self.n_bars = n_bars
@@ -459,11 +466,10 @@ class HPBars(SquarePhysicalGUI):
             i: HPBarGUI(self.screen, self.screen_rect, x=self.x, y=self.y, w=self.w, h=self.h/len(self.n_bars), c=self.c, hp=self.n_bars[i]) for i in self.n_bars.keys()
         }
 
-
     def relative_scale(self, s, x, y):
         super().relative_scale(s, x, y)
-        for i in self.hps.keys():
-            self.hps[i].relative_scale(s, x, y)
+        # for i in self.hps.keys():
+        #     self.hps[i].relative_scale(s, x, y)
 
     def reset_block(self):
         super().reset_block()
@@ -473,7 +479,6 @@ class HPBars(SquarePhysicalGUI):
     def reset_hp_w(self):
         for i in self.hps.keys():
             self.hps[i].reset_hp_w()
-
 
     def get_hp_names(self):
         return list(self.n_bars.keys())
@@ -490,7 +495,6 @@ class HPBars(SquarePhysicalGUI):
         # self.reset_hp_w()
         return self.hps[name].get_hp_max()
         
-
     def get_hp_max(self):
         # self.reset_hp_w()
         return np.sum([self.hps[i].get_hp_max() for i in self.hps.keys()])
@@ -501,7 +505,6 @@ class HPBars(SquarePhysicalGUI):
         nums = nums/np.sum(nums)
         for i, v in enumerate(nums*val):
             self.hps[list(self.hps.keys())[i]].hit_hp(v)
-
 
     def heal_hp(self, val):
         # self.hps[np.random.choice(list(self.hps.keys()))].heal_hp(val) 
@@ -523,16 +526,22 @@ class HPBars(SquarePhysicalGUI):
         for i in self.hps.keys():
             self.hps[i].reset_screen(screen)
 
-
     def event_handler(self, event):
         super().event_handler(event)
         for i in self.hps.keys():
             self.hps[i].event_handler(event)
 
     def render(self):
+        # # self.screen.blit(self.surf, self.rect)
+        # if self.render_color:
+        #     self.surf.fill(self.c)
         for k, i in enumerate(self.hps.keys()):
-            self.hps[i].set_topleft(self.get_topleft()[0], self.get_topleft()[1]+self.h*game.gameplay.player.gui.scale/len(self.n_bars)*k)
+            self.hps[i].set_topleft(self.get_left(), self.get_top()+self.h/len(self.n_bars)*k)
             self.hps[i].render()
+        # if self.render_bc:
+        #     pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
+        self.zoom()
+        
 
 class TextureSquareGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
