@@ -30,6 +30,7 @@ GAME_NAME = "GUI"
 CELL_SIZE = 32
 
 FPS = 60
+# FPS = -1
 
 # FONT = None
 FONT = './font/unifont.ttf'
@@ -526,7 +527,15 @@ class TextureSquareGUI(SquarePhysicalGUI):
         self.surf = pg.transform.scale(self.surf_origin, (self.w+1, self.h+1))
         
         self.set_rect(self.surf)
-
+    
+    def rotate_texture_only_surf(self, angle):
+        # self.surf_origin = 
+        # self.surf = self.surf_origin
+        # self.surf = pg.transform.scale(pg.transform.rotate(self.surf_origin, angle), (self.w+1, self.h+1))
+        self.surf = pg.transform.rotozoom(self.surf_origin, angle, self.scale)
+        
+        self.set_rect(self.surf)
+    
 class MobGUI(TextureSquareGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
         super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, texture_file=texture_file)
@@ -690,7 +699,7 @@ class Button(SquareGUI):
         super().render()
 
 class ButtonRange(Button):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=BLACK, activate_color=BLUE, text='', active_f=lambda : ..., **kwargs) -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=25, h=25, c=BLACK, activate_color=BLUE, text='', active_f=lambda x: ..., **kwargs) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, activate_color, text, active_f, **kwargs)
 
         self.range_btn = Button(
@@ -740,7 +749,7 @@ class ButtonRange(Button):
                 self.set_y(self.y + event.rel[1])
                 
                 # self.rect.move_ip(event.rel)
-            self.active_f()
+            self.active_f(self.get_procentage())
 
     def render(self):
         self.screen.blit(self.surf, self.rect)
@@ -942,7 +951,8 @@ class WindowSetting(Window):
                 w=self.w-20, 
                 h=25, 
                 c=BLACK,
-                text=''
+                text='',
+                active_f=lambda x: game.gameplay.player.set_speed(x)
             ))
         self.objects[-1].motionable = False
 
@@ -1881,6 +1891,7 @@ class Item(Square):
         super().__del__()
 
     def activate_handler(self):
+        # print(self.x, self.y)
         if self.isActivate:
             self.isActivate = False
             if self.type == 'gun':
@@ -1896,8 +1907,10 @@ class Item(Square):
                     h=7/32,
                     screen=game.gameplay.screen, 
                     screen_rect=game.gameplay.screen_rect,
-                    dx=(game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2) / 1000,
-                    dy=(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2) / 1000,
+                    # dx=(game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2) / 1000,
+                    # dy=(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2) / 1000,
+                    angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                    blt_speed=1,
                     hp_changer=50
                 )
                 blt.gui.set_scale(game.gameplay.player.gui.scale)
@@ -1912,8 +1925,8 @@ class Item(Square):
                     h=0.5,
                     screen=game.gameplay.screen, 
                     screen_rect=game.gameplay.screen_rect,
-                    dx=0,
-                    dy=0,
+                    angle=0,
+                    blt_speed=0,
                     hp_changer=50
                 )
                 blt.gui.set_scale(game.gameplay.player.gui.scale)
@@ -1967,6 +1980,9 @@ class Mob(Square):
         del self.isAlive
         del self.inventory
         super().__del__()
+
+    def set_speed(self, speed):
+        self.speed = speed
 
     def get_chunck_pos_yx(self):
         return int(self.y//16), int(self.x//16)
@@ -2079,7 +2095,6 @@ class Player(Mob):
             self.gui.set_x(self.x*self.gui.w)
             self.gui.set_y(self.y*self.gui.h)
 
-
     def event_handler(self, event):
         self.gui.event_handler(event)
         self.inventory[self.chosen_item].event_handler(event)
@@ -2133,7 +2148,14 @@ class Player(Mob):
         self.gui.render()
         # self.isFire = True
         # self.inventory[self.chosen_item].isActivate = True
-        self.inventory[self.chosen_item].gui.set_center(self.gui.x+0.5*32*self.gui.scale, self.gui.y)
+
+        # self.inventory[self.chosen_item].gui.set_center(self.gui.x+0.5*32*self.gui.scale, self.gui.y)
+        angle = np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2)
+        dx = np.cos(angle)
+        dy = np.sin(angle)
+        self.inventory[self.chosen_item].gui.rotate_texture_only_surf(-angle*180/np.pi - 45)
+        self.inventory[self.chosen_item].gui.set_center(self.gui.x+(dx)*0.75*32*self.gui.scale, self.gui.y+(dy)*0.75*32*self.gui.scale)
+        
         self.inventory[self.chosen_item].render()
         self.move()
         self.dead_handler()
@@ -2211,10 +2233,11 @@ class HealZone(Mob):
         self.move()
 
 class Bullet(KillZone):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, dx=0, dy=0, hp_changer=1) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, angle=0, blt_speed=1, hp_changer=1) -> None:
         super().__init__(x, y, w, h, screen, screen_rect, hp_changer)
-        self.dx = dx
-        self.dy = dy
+        self.dx = np.cos(angle)*blt_speed
+        self.dy = np.sin(angle)*blt_speed
+        self.hp_changer = blt_speed*100+self.hp_changer
 
         self.gui.reset_texture('./tiles/bullet.png')
         self.gui.set_wh(32, 32)
