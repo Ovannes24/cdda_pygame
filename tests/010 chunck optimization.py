@@ -2708,6 +2708,21 @@ class GamePlay:
             pg.draw.polygon(self.screen, BLACK, p, 3)
         # pg.draw.polygon(self.screen, BLACK, np.random.choice(np.arange(0, 500), (1129*6, 2)))
 
+    def visible_map(self):
+        t = np.linspace(0, np.pi*2, 101)
+        cx = np.cos(t)*self.player.gui.scale*32*64+1*self.screen_rect.width/2
+        cy = np.sin(t)*self.player.gui.scale*32*64+1*self.screen_rect.height/2
+        pg.draw.polygon(self.screen, BLACK, list(np.c_[cx, cy])+[
+            list(self.screen_rect.bottomright),
+            list(self.screen_rect.bottomleft),
+            [0,0],
+            list(self.screen_rect.topright),
+            list(self.screen_rect.bottomright),
+            [cx[-1], cy[-1]]
+            
+            ]
+        )
+
     def event_handler(self, event):
         
         self.map.event_handler(event)
@@ -2750,7 +2765,10 @@ class GamePlay:
         # print(self.n_objects, self._del_objects_list)
         self.del_objects()
         self.camera.follow(self.player)
-        
+
+
+        # self.visible_map()
+
         # print(f"{self.player.x:.2f} {self.player.y:.2f} {self.cursor.x:.2f} {self.cursor.y:.2f} {self.map.blocks[0, 0].gui.x:.2f} {self.map.blocks[0, 0].gui.y:.2f}")
 
 
