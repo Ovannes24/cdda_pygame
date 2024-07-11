@@ -496,11 +496,19 @@ class HPBars(SquarePhysicalGUI):
         return np.sum([self.hps[i].get_hp_max() for i in self.hps.keys()])
 
     def hit_hp(self, val):
-        self.hps[np.random.choice(list(self.hps.keys()))].hit_hp(val)
+        # self.hps[np.random.choice(list(self.hps.keys()))].hit_hp(val)
+        nums = np.random.randint(0, 1000, len(self.n_bars))/ 1000
+        nums = nums/np.sum(nums)
+        for i, v in enumerate(nums*val):
+            self.hps[list(self.hps.keys())[i]].hit_hp(v)
 
 
     def heal_hp(self, val):
-        self.hps[np.random.choice(list(self.hps.keys()))].heal_hp(val) 
+        # self.hps[np.random.choice(list(self.hps.keys()))].heal_hp(val) 
+        nums = np.random.randint(0, 1000, len(self.n_bars))/ 1000
+        nums = nums/np.sum(nums)
+        for i, v in enumerate(nums*val):
+            self.hps[list(self.hps.keys())[i]].heal_hp(v)
 
     def dead_hp(self):
         for i in self.hps.keys():
@@ -573,7 +581,7 @@ class MobGUI(TextureSquareGUI):
             w=self.w, 
             h=4, 
             c=RED,
-            n_bars={'Л. РУКА': 50, 'Л. НОГА': 50, 'П. РУКА': 50, 'П. НОГА': 50, 'ГОЛОВА': 100, 'ТОРС': 100}
+            n_bars={'Л. РУКА': 50, 'Л. НОГА': 50, 'П. РУКА': 50, 'П. НОГА': 50, 'ГОЛОВА': 50, 'ТОРС': 100}
         )
 
     def __del__(self):
@@ -1940,6 +1948,9 @@ class Item(Square):
                 blt.gui.set_scale(game.gameplay.player.gui.scale)
                 game.gameplay.add_object(blt)
             elif self.type == 'knife':
+                snd = pg.mixer.Sound(f'./sounds/knife/knife_{np.random.randint(2,4+1)}.mp3')
+                snd.set_volume(1)
+                snd.play()
                 ka = KinfeAttack(
                     x=self.owner.x, 
                     y=self.owner.y, 
