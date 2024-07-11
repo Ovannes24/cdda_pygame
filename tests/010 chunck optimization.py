@@ -396,8 +396,10 @@ class HPBarGUI(SquarePhysicalGUI):
 
     def reset_block(self):
         if self.w <= 0:
+            # print(self.w, self.h)
             self.w = 0
         if self.h <= 0:
+            # print(self.w, self.h)
             self.h = 0
 
         self.set_wh(self.w, self.h)
@@ -417,7 +419,13 @@ class HPBarGUI(SquarePhysicalGUI):
     def set_hp(self, val):
         self.hp = val
         self.reset_hp_w()
-    
+
+    def set_hp_max(self, hp_max):
+        self.hp_max = hp_max
+        self.hp = self.hp_max
+
+        self.w_max = self.w * (self.hp/self.hp_max)
+
     def hit_hp(self, val):
         if not (self.hp - val <= 0):
             self.hp -= val
@@ -501,14 +509,14 @@ class HPBars(SquarePhysicalGUI):
 
     def hit_hp(self, val):
         # self.hps[np.random.choice(list(self.hps.keys()))].hit_hp(val)
-        nums = np.random.randint(0, 1000, len(self.n_bars))/ 1000
+        nums = np.random.randint(10, 1000, len(self.n_bars))/ 1000
         nums = nums/np.sum(nums)
         for i, v in enumerate(nums*val):
             self.hps[list(self.hps.keys())[i]].hit_hp(v)
 
     def heal_hp(self, val):
         # self.hps[np.random.choice(list(self.hps.keys()))].heal_hp(val) 
-        nums = np.random.randint(0, 1000, len(self.n_bars))/ 1000
+        nums = np.random.randint(10, 1000, len(self.n_bars))/ 1000
         nums = nums/np.sum(nums)
         for i, v in enumerate(nums*val):
             self.hps[list(self.hps.keys())[i]].heal_hp(v)
@@ -542,7 +550,6 @@ class HPBars(SquarePhysicalGUI):
         #     pg.draw.rect(self.screen, self.bc, (self.x-self.w//2, self.y-self.h//2, self.w, self.h), 1)
         self.zoom()
         
-
 class TextureSquareGUI(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
@@ -2285,7 +2292,9 @@ class Bullet(KillZone):
         self.dy = np.sin(angle)*blt_speed
         self.hp_changer = blt_speed*100+self.hp_changer
 
-        self.hitable = False
+        self.hitable = True
+        self.gui.hp_bar.set_hp_bars({'ЗОНА': 60*5})
+        
 
         self.gui.reset_texture('./tiles/bullet.png')
         self.gui.set_wh(32, 32)
@@ -2302,6 +2311,7 @@ class Bullet(KillZone):
     def dead_handler(self):
         if self.isAlive:
             if self.hitable:
+                # print(self.gui.hp_bar.get_hp(), self.gui.hp_bar.get_wh())
                 self.gui.hp_bar.hit_hp(1)
             if self.gui.hp_bar.get_hp() <= 0:
                 self.isAlive = False
