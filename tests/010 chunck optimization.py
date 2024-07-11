@@ -366,7 +366,7 @@ class HPBarGUI(SquarePhysicalGUI):
 
         self.render_bc = False
 
-        self.hp_max = 100
+        self.hp_max = hp
         self.hp = self.hp_max
 
         self.w_max = self.w * (self.hp/self.hp_max)
@@ -424,6 +424,10 @@ class HPBarGUI(SquarePhysicalGUI):
             self.hp = 0
             self.reset_hp_w()
 
+    def dead_hp(self):
+        self.hp = 0
+        self.reset_hp_w()
+
     def heal_hp(self, val):
         if not (self.hp + val >= self.hp_max):
             self.hp += val
@@ -434,13 +438,25 @@ class HPBarGUI(SquarePhysicalGUI):
         # self.hp = (self.hp+val) % (self.hp_max+1)
         # print(self.hp)
         # self.reset_hp_w()    
+    
+    def alive_hp(self):
+        self.hp = self.hp_max
+        self.reset_hp_w()
 
 class HPBars(SquarePhysicalGUI):
     def __init__(self, screen, screen_rect, x=0, y=0, w=CELL_SIZE, h=2, c=RED, n_bars={'hp1': 100}, **kwargs) -> None:
         self.n_bars = n_bars
         super().__init__(screen, screen_rect, x, y, w, h*len(self.n_bars), c, **kwargs)
+        # self.hps = {
+        #     i: HPBarGUI(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, hp=self.n_bars[i]) for i in self.n_bars.keys()
+        # }
+        self.set_hp_bars(self.n_bars)
+
+    def set_hp_bars(self, n_bars):
+        self.n_bars = n_bars
+        # super().__init__(self.screen, self.screen_rect, self.x, self.y, self.w, self.h*len(self.n_bars), self.c)
         self.hps = {
-            i: HPBarGUI(screen, screen_rect, x=x, y=y, w=w, h=h, c=c, hp=self.n_bars[i]) for i in self.n_bars.keys()
+            i: HPBarGUI(self.screen, self.screen_rect, x=self.x, y=self.y, w=self.w, h=self.h/len(self.n_bars), c=self.c, hp=self.n_bars[i]) for i in self.n_bars.keys()
         }
 
 
@@ -485,6 +501,14 @@ class HPBars(SquarePhysicalGUI):
 
     def heal_hp(self, val):
         self.hps[np.random.choice(list(self.hps.keys()))].heal_hp(val) 
+
+    def dead_hp(self):
+        for i in self.hps.keys():
+            self.hps[i].dead_hp()
+
+    def alive_hp(self):
+        for i in self.hps.keys():
+            self.hps[i].alive_hp()
 
     def reset_screen(self, screen):
         super().reset_screen(screen)
@@ -627,7 +651,7 @@ class KillZoneGUI(MobGUI):
             w=self.w, 
             h=4, 
             c=RED,
-            n_bars={'ЗОНА': 100}
+            n_bars={'ЗОНА': 10}
         )
 
 class CursorGUI(TextureSquareGUI):
@@ -1899,8 +1923,8 @@ class Item(Square):
                 snd.set_volume(0.3)
                 snd.play()
                 blt = Bullet(
-                    x=game.gameplay.player.x, 
-                    y=game.gameplay.player.y, 
+                    x=self.owner.x, 
+                    y=self.owner.y, 
                     # w=0.5*game.gameplay.player.gui.scale,
                     # h=0.5*game.gameplay.player.gui.scale,
                     w=7/32,
@@ -1916,21 +1940,22 @@ class Item(Square):
                 blt.gui.set_scale(game.gameplay.player.gui.scale)
                 game.gameplay.add_object(blt)
             elif self.type == 'knife':
-                blt = Bullet(
-                    x=game.gameplay.player.x, 
-                    y=game.gameplay.player.y, 
+                ka = KinfeAttack(
+                    x=self.owner.x, 
+                    y=self.owner.y, 
                     # w=0.5*game.gameplay.player.gui.scale,
                     # h=0.5*game.gameplay.player.gui.scale,
                     w=0.5,
                     h=0.5,
                     screen=game.gameplay.screen, 
                     screen_rect=game.gameplay.screen_rect,
-                    angle=0,
-                    blt_speed=0,
+                    angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                    blt_speed=0.15,
                     hp_changer=50
                 )
-                blt.gui.set_scale(game.gameplay.player.gui.scale)
-                game.gameplay.add_object(blt)
+                ka.gui.hp_bar.set_hp_bars({'ЗОНА': 13})
+                ka.gui.set_scale(game.gameplay.player.gui.scale)
+                game.gameplay.add_object(ka)
             elif self.type == 'food':
                 self.owner.gui.hp_bar.heal_hp(100)   
 
@@ -2148,7 +2173,6 @@ class Player(Mob):
         self.gui.render()
         # self.isFire = True
         # self.inventory[self.chosen_item].isActivate = True
-
         # self.inventory[self.chosen_item].gui.set_center(self.gui.x+0.5*32*self.gui.scale, self.gui.y)
         angle = np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2)
         dx = np.cos(angle)
@@ -2158,6 +2182,7 @@ class Player(Mob):
         
         self.inventory[self.chosen_item].render()
         self.move()
+        # print(self.inventory[self.chosen_item].gui.get_center())
         self.dead_handler()
         # print(self.gui.hp_bar.get_hp())
         # print('Plr', self.get_x(), self.get_y())
@@ -2235,14 +2260,17 @@ class HealZone(Mob):
 class Bullet(KillZone):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, angle=0, blt_speed=1, hp_changer=1) -> None:
         super().__init__(x, y, w, h, screen, screen_rect, hp_changer)
+        
         self.dx = np.cos(angle)*blt_speed
         self.dy = np.sin(angle)*blt_speed
         self.hp_changer = blt_speed*100+self.hp_changer
 
+        self.hitable = False
+
         self.gui.reset_texture('./tiles/bullet.png')
         self.gui.set_wh(32, 32)
         self.gui.set_x(self.gui.get_xy()[0])
-        self.gui.set_x(self.gui.get_xy()[0])
+        self.gui.set_y(self.gui.get_xy()[1])
         
 
     def __del__(self):
@@ -2250,6 +2278,13 @@ class Bullet(KillZone):
         del self.dy
         
         super().__del__()
+
+    def dead_handler(self):
+        if self.isAlive:
+            if self.hitable:
+                self.gui.hp_bar.hit_hp(1)
+            if self.gui.hp_bar.get_hp() <= 0:
+                self.isAlive = False
 
     def move(self):
         self.set_x(self.get_x()+self.dx)
@@ -2262,7 +2297,17 @@ class Bullet(KillZone):
     def render(self):
         self.gui.render()
         self.move()
+        self.dead_handler()
         # print(self.dx, self.dy)
+
+class KinfeAttack(Bullet):
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, angle=0, blt_speed=1, hp_changer=1) -> None:
+        super().__init__(x, y, w, h, screen, screen_rect, angle, blt_speed, hp_changer)
+        self.hitable = True
+        self.gui.reset_texture('./tiles/knife.png')
+        self.gui.set_wh(32, 32)
+        self.gui.set_x(self.gui.get_xy()[0])
+        self.gui.set_y(self.gui.get_xy()[1])
 
 class Camera(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
@@ -2410,7 +2455,6 @@ class GamePlay:
         self.camera.set_center(self.screen_rect.width/2, self.screen_rect.height/2)
         self.camera.gui.set_wh(self.screen_rect.width-100, self.screen_rect.height-100)
         
-
     def add_object(self, blt):
         if self.player.isFire:
             # blt = Bullet(
@@ -2521,17 +2565,26 @@ class GamePlay:
 
 
         for o in range(self.n_objects):
+            # print(list(self.objects[o].gui.hp_bar.n_bars.keys())[0], self.objects[o].gui.hp_bar.n_bars[list(self.objects[o].gui.hp_bar.n_bars.keys())[0]], self.objects[o].isAlive, self.objects[o].gui.hp_bar.get_hp())
+            if not self.objects[o].isAlive:
+                self._del_objects_list.append(o)
             for i, j in get_closest_collidable_object(self.map.collidable, np.array([self.objects[o].y, self.objects[o].x])):
                 if self.objects[o].collidesquare(self.map[i, j]):
                     self.objects[o].collision(self.map[i, j])
+                    self.objects[o].gui.hp_bar.dead_hp()
                     self._del_objects_list.append(o)
+
+
                 
         for o in range(self.n_objects):
             for mob in range(self.n_mobs):
                 if self.mobs[mob].isAlive:
                     if self.objects[o].collidesquare(self.mobs[mob]):
                         self.mobs[mob].gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
+                        # self._del_objects_list.append(o)
+                        self.objects[o].gui.hp_bar.dead_hp()
                         self._del_objects_list.append(o)
+            
 
                 
         if self.kill_zone.collidesquare(self.player):
