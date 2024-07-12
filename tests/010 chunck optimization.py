@@ -1511,17 +1511,22 @@ class Blocks(Square):
         self.blocks[y//16, x//16][1][y % 16, x % 16] = val
 
 class Chunck(Block):
-    def __init__(self, x=0, y=0, w=16, h=16, screen=None, screen_rect=None) -> None:
+    def __init__(self, x=0, y=0, w=16, h=16, screen=None, screen_rect=None, pc=None) -> None:
         super().__init__(x, y, w, h, screen, screen_rect)
+
+        self.pc = pc
 
         self.time = 1
         self.speed = self.time * 0.1
 
         self.set_topleft(self.x*16, self.y*16)
 
-        self.block_bottom_id = block_bottom_id
+        # self.block_bottom_id = block_bottom_id
 
-        self.block_center_id = block_center_id
+        # self.block_center_id = block_center_id
+        # print(self.y//16, self.x//16)
+        self.block_bottom_id, self.block_center_id = self.pc[self.y//16, self.x//16]
+
         # self.block_center_id = np.random.choice([0, 1], (16, 16), p=[0.9, 0.1]) | block_center_id
         # self.block_center_id = np.max(np.array([np.random.choice([0, 1, 2, 3, 4], (16, 16), p=[0.9]+[0.1/4]*4),  block_center_id]), axis=0)
         
@@ -1630,9 +1635,104 @@ class Chunck(Block):
         self.gui.render()
         self.move()
 
+class ProceduralGeneration:
+    def __init__(self, seed=42) -> None:
+        self.seed = seed
+        self.rng = np.random.default_rng(self.seed)
+        self.region_map = self.rng.integers(0, 1+1, (16, 16))
+        # print(self.region_map, self.region_map[0, 2])
+
+        self.block_bottom_0 = np.array([
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+        ])
+
+        self.block_bottom_1 = np.array([
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
+        ])
+
+        self.block_center_0 = np.array([
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
+        ])
+
+        self.block_center_1 = np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+        ])
+
+    def __getitem__(self, yx):
+        y, x = yx
+        rm_val = self.region_map[int((y+16//2)% 16), int((x+16//2)% 16)]
+        # rm_val = self.region_map[0, 1]
+        
+        if rm_val== 0:
+            return self.block_bottom_0, self.block_center_0
+        elif rm_val== 1:
+            return self.block_bottom_1, self.block_center_1
+
 class Map(Square):
     def __init__(self, x=0, y=0, w=MAP_SIZE[1], h=MAP_SIZE[0], screen=None, screen_rect=None) -> None:
         super().__init__(x, y, w, h, screen=screen, screen_rect=screen_rect)
+
+        self.procedural_generation = ProceduralGeneration(42)
 
         mx, my = np.meshgrid(
             np.arange(-2, 2+1),
@@ -1671,7 +1771,7 @@ class Map(Square):
 
 
         self.chuncks = {
-            (i, j): Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect) for i, j in self.yx_indexes
+            (i, j): Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect, pc=self.procedural_generation) for i, j in self.yx_indexes
         }
 
         self.not_nan = []
@@ -1829,7 +1929,7 @@ class Map(Square):
         # print('add chunck', yx_index)
         self.yx_indexes = np.append(self.yx_indexes, [yx_index], axis=0)
         i, j = yx_index
-        self.chuncks[(i, j)] = Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect)
+        self.chuncks[(i, j)] = Chunck(x=j, y=i, screen=self.gui.screen, screen_rect=self.gui.screen_rect, pc=self.procedural_generation)
         self.chuncks[(i, j)].gui.set_scale(game.gameplay.player.gui.scale)
         # self.chuncks[(i, j)].gui.scale = self.gui.scale
         # self.chuncks[(i, j)].gui.relative_scale(self.chuncks[(i, j)].gui.scale, self.chuncks[(i, j)].gui.screen_rect.width//2, self.chuncks[(i, j)].gui.screen_rect.height//2)
