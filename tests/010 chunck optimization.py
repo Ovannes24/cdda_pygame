@@ -1959,7 +1959,7 @@ class Item(Square):
                     # dy=(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2) / 1000,
                     angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
                     blt_speed=1,
-                    hp_changer=50
+                    hp_changer=100
                 )
                 blt.gui.set_scale(game.gameplay.player.gui.scale)
                 game.gameplay.add_object(blt)
@@ -1978,7 +1978,8 @@ class Item(Square):
                     screen_rect=game.gameplay.screen_rect,
                     angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
                     blt_speed=0.15,
-                    hp_changer=50
+                    hp_changer=50,
+                    texture_surf=self.gui.surf
                 )
                 ka.gui.hp_bar.set_hp_bars({'ЗОНА': 13})
                 ka.gui.set_scale(game.gameplay.player.gui.scale)
@@ -2044,6 +2045,10 @@ class Mob(Square):
             if self.gui.hp_bar.get_hp() <= 0:
                 self.isAlive = False
                 self.gui.rotate_texture(-90)
+        else:
+            if self.gui.hp_bar.get_hp() > 0:
+                self.isAlive = True
+                self.gui.rotate_texture(90)
 
         # if self.isAlive:
         #     if self.gui.hp_bar.hp <= 0:
@@ -2149,7 +2154,9 @@ class Player(Mob):
 
     def event_handler(self, event):
         self.gui.event_handler(event)
-        self.inventory[self.chosen_item].event_handler(event)
+        for i in range(len(self.inventory.get_objects())):
+            self.inventory[i].gui.event_handler(event)
+        # self.inventory[self.chosen_item].event_handler(event)
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_w and not self.down_pressed:
                 self.up_pressed = True
@@ -2201,13 +2208,14 @@ class Player(Mob):
         # self.isFire = True
         # self.inventory[self.chosen_item].isActivate = True
         # self.inventory[self.chosen_item].gui.set_center(self.gui.x+0.5*32*self.gui.scale, self.gui.y)
-        angle = np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2)
-        dx = np.cos(angle)
-        dy = np.sin(angle)
-        self.inventory[self.chosen_item].gui.rotate_texture_only_surf(-angle*180/np.pi - 45)
-        self.inventory[self.chosen_item].gui.set_center(self.gui.x+(dx)*0.75*32*self.gui.scale, self.gui.y+(dy)*0.75*32*self.gui.scale)
-        
-        self.inventory[self.chosen_item].render()
+        if self.isAlive:
+            angle = np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2)
+            dx = np.cos(angle)
+            dy = np.sin(angle)
+            self.inventory[self.chosen_item].gui.rotate_texture_only_surf(-angle*180/np.pi - 45)
+            self.inventory[self.chosen_item].gui.set_center(self.gui.x+(dx)*0.75*32*self.gui.scale, self.gui.y+(dy)*0.75*32*self.gui.scale)
+            
+            self.inventory[self.chosen_item].render()
         self.move()
         # print(self.inventory[self.chosen_item].gui.get_center())
         self.dead_handler()
@@ -2331,13 +2339,23 @@ class Bullet(KillZone):
         # print(self.dx, self.dy)
 
 class KinfeAttack(Bullet):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, angle=0, blt_speed=1, hp_changer=1) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, angle=0, blt_speed=1, hp_changer=1, texture_surf=None) -> None:
         super().__init__(x, y, w, h, screen, screen_rect, angle, blt_speed, hp_changer)
         self.hitable = True
-        self.gui.reset_texture('./tiles/knife.png')
+        # self.gui.reset_texture('./tiles/knife.png')
+        self.gui.set_surf_origin(texture_surf)
+        # self.gui.set_scale(game.gameplay.player.gui.scale*1.5)
         self.gui.set_wh(32, 32)
         self.gui.set_x(self.gui.get_xy()[0])
         self.gui.set_y(self.gui.get_xy()[1])
+        # self.move()
+
+    # def move(self):
+    #     self.set_x(self.get_x()+self.dx)
+    #     self.set_y(self.get_y()+self.dy)
+
+    #     self.gui.set_x(self.x*32*game.gameplay.player.gui.scale)
+    #     self.gui.set_y(self.y*32*game.gameplay.player.gui.scale)
 
 class Camera(Square):
     def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
