@@ -2206,7 +2206,7 @@ class Mob(Square):
         self.mob_view_lenght = 0
 
         self.inventory.add_items([
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun', owner=self)
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self)
         ])
         self.chosen_item = 0 % len(self.inventory)
 
@@ -2239,6 +2239,11 @@ class Mob(Square):
         #     if self.gui.hp_bar.hp > 0:
         #         self.isAlive = True
         #         self.gui.rotate_texture(90)
+
+    def reset_screen(self, screen):
+        self.gui.reset_screen(screen)
+        for i in range(len(self.inventory.get_objects())):
+            self.inventory[i].gui.reset_screen(screen)
 
     def set_mob_view_angle_by_target(self, target):
         # print(target.y, target.x, self.y, self.x)
@@ -2291,7 +2296,7 @@ class Player(Mob):
         
         self.inventory.add_items([
             Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun', owner=self),
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self),
+            # Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self),
             Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='food', owner=self),
             
         ])
@@ -2697,8 +2702,6 @@ class GamePlay:
         self.screen_rect = self.screen.get_rect()
         self.map.reset_screen(screen)
         self.item.gui.reset_screen(screen)
-        for mob in range(self.n_mobs):
-            self.mobs[mob].gui.reset_screen(screen)
 
         self.kill_zone.gui.reset_screen(screen)
         self.heal_zone.gui.reset_screen(screen)
@@ -2707,6 +2710,8 @@ class GamePlay:
             self.objects[o].gui.reset_screen(screen)
         
 
+        for mob in range(self.n_mobs):
+            self.mobs[mob].reset_screen(screen)
         self.cursor.gui.reset_screen(screen)
         self.player.reset_screen(screen)
         self.camera.gui.reset_screen(screen)
