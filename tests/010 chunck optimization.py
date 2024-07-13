@@ -1641,10 +1641,10 @@ class ProceduralGeneration:
         self.rng = np.random.default_rng(self.seed)
         self.region_map = self.rng.integers(0, 1+1, (16, 16))
 
-        road_map = self.rng.choice([0, 1], (16, 16), p=[0.95, 0.05])
+        road_map = self.rng.choice([0, 1], (16, 16), p=[0.97, 0.03])
         road_map_new = road_map
-        for r in self.rng.choice([(0,1), (1,0)], 7):
-            road_map_new = road_map_new | np.roll(road_map, r*self.rng.integers(0, 10), axis=(0, 1))
+        for r in self.rng.choice([(0,1), (1,0)], 32):
+            road_map_new = road_map_new | np.roll(road_map, r*self.rng.integers(0, 16), axis=(0, 1))
         road_map = road_map_new
         self.region_map[road_map == 1] = 2
 
@@ -1687,8 +1687,6 @@ class ProceduralGeneration:
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
         ])
-
-
 
         self.block_bottom_0 = np.array([
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
@@ -1766,7 +1764,6 @@ class ProceduralGeneration:
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
         ])
 
-
         self.block_bottom_road = np.array([
             [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
             [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
@@ -1809,8 +1806,8 @@ class Map(Square):
         self.procedural_generation = ProceduralGeneration(42)
 
         mx, my = np.meshgrid(
-            np.arange(-5, 5+1),
-            np.arange(-5, 5+1)
+            np.arange(-2, 2+1),
+            np.arange(-2, 2+1)
         )
         mx, my = mx.reshape(-1), my.reshape(-1)
         self.mxmy = np.array([my, mx]).T
@@ -2121,8 +2118,8 @@ class Item(Square):
                 snd.set_volume(0.3)
                 snd.play()
                 blt = Bullet(
-                    x=self.owner.x, 
-                    y=self.owner.y, 
+                    x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
+                    y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
                     # w=0.5*game.gameplay.player.gui.scale,
                     # h=0.5*game.gameplay.player.gui.scale,
                     w=7/32,
@@ -2131,7 +2128,8 @@ class Item(Square):
                     screen_rect=game.gameplay.screen_rect,
                     # dx=(game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2) / 1000,
                     # dy=(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2) / 1000,
-                    angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                    # angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                    angle=self.owner.mob_view_angle,
                     blt_speed=1,
                     hp_changer=100
                 )
@@ -2142,15 +2140,16 @@ class Item(Square):
                 snd.set_volume(1)
                 snd.play()
                 ka = KinfeAttack(
-                    x=self.owner.x, 
-                    y=self.owner.y, 
+                    x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
+                    y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
                     # w=0.5*game.gameplay.player.gui.scale,
                     # h=0.5*game.gameplay.player.gui.scale,
                     w=0.5,
                     h=0.5,
                     screen=game.gameplay.screen, 
                     screen_rect=game.gameplay.screen_rect,
-                    angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                    # angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                    angle=self.owner.mob_view_angle,
                     blt_speed=0.15,
                     hp_changer=50,
                     texture_surf=self.gui.surf
@@ -2203,6 +2202,14 @@ class Mob(Square):
         self.gui.render_color = False
         self.gui.render_bc = False
 
+        self.mob_view_angle = 0
+        self.mob_view_lenght = 0
+
+        self.inventory.add_items([
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun', owner=self)
+        ])
+        self.chosen_item = 0 % len(self.inventory)
+
     def __del__(self):
         del self.isAlive
         del self.inventory
@@ -2233,6 +2240,12 @@ class Mob(Square):
         #         self.isAlive = True
         #         self.gui.rotate_texture(90)
 
+    def set_mob_view_angle_by_target(self, target):
+        # print(target.y, target.x, self.y, self.x)
+        dy = target.y - self.y
+        dx = target.x - self.x
+        self.mob_view_angle = np.arctan2(dy, dx)
+        self.mob_view_lenght = np.sqrt(dy**2 + dx**2)
         
     def move(self):
         if self.isAlive:
@@ -2249,10 +2262,26 @@ class Mob(Square):
             self.gui.set_y(self.y*32*self.gui.scale)
 
     def event_handler(self, event):
+        self.inventory[self.chosen_item].event_handler(event)
         self.gui.event_handler(event)
         
     def render(self):
         self.gui.render()
+
+        if self.isAlive:
+            if game.gameplay.player.isAlive:
+                self.set_mob_view_angle_by_target(game.gameplay.player)
+                if self.mob_view_lenght < 10:
+                    self.inventory[self.chosen_item].isActivate = True
+            angle = self.mob_view_angle
+            # print(angle, self.x, self.y)
+            dx = np.cos(angle)
+            dy = np.sin(angle)
+            self.inventory[self.chosen_item].gui.rotate_texture_only_surf(-angle*180/np.pi - 45)
+            self.inventory[self.chosen_item].gui.set_center(self.gui.x+(dx)*0.75*32*self.gui.scale, self.gui.y+(dy)*0.75*32*self.gui.scale)
+            
+            self.inventory[self.chosen_item].render()
+
         self.move()
         self.dead_handler()
 
@@ -2266,7 +2295,6 @@ class Player(Mob):
             Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='food', owner=self),
             
         ])
-            
         self.chosen_item = 0 % len(self.inventory)
 
         self.gui.reset_texture('./tiles/player.png')
@@ -2300,6 +2328,10 @@ class Player(Mob):
         del self.isFire 
 
         super().__del__()
+
+    def set_mob_view_angle_by_target(self, target):
+        # print(target.y, target.x, self.y, self.x)
+        self.mob_view_angle = np.arctan2(target.y, target.x)
 
     def reset_screen(self, screen):
         self.gui.reset_screen(screen)
@@ -2383,7 +2415,9 @@ class Player(Mob):
         # self.inventory[self.chosen_item].isActivate = True
         # self.inventory[self.chosen_item].gui.set_center(self.gui.x+0.5*32*self.gui.scale, self.gui.y)
         if self.isAlive:
-            angle = np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2)
+            self.set_mob_view_angle_by_target(game.gameplay.cursor)
+            angle = self.mob_view_angle
+            # print(angle, self.x, self.y)
             dx = np.cos(angle)
             dy = np.sin(angle)
             self.inventory[self.chosen_item].gui.rotate_texture_only_surf(-angle*180/np.pi - 45)
@@ -2629,7 +2663,9 @@ class GamePlay:
         #     np.save(f, self.map.collidable)
 
         self.mobs = []
-        self.n_mobs = 10
+        # self.n_mobs = 10
+        self.n_mobs = 1
+        
 
         self.item = Item(x=2, y=2, screen=screen, screen_rect=screen_rect)
 
@@ -2678,26 +2714,29 @@ class GamePlay:
         self.camera.gui.set_wh(self.screen_rect.width-100, self.screen_rect.height-100)
         
     def add_object(self, blt):
-        if self.player.isFire:
-            # blt = Bullet(
-            #     x=self.player.x, 
-            #     y=self.player.y, 
-            #     # w=0.5*game.gameplay.player.gui.scale,
-            #     # h=0.5*game.gameplay.player.gui.scale,
-            #     w=0.5,
-            #     h=0.5,
-            #     screen=self.screen, 
-            #     screen_rect=self.screen_rect,
-            #     dx=(self.cursor.gui.x - self.screen_rect.width/2) / 1000,
-            #     dy=(self.cursor.gui.y - self.screen_rect.height/2) / 1000,
-            #     hp_changer=50
-            # )
-            # blt.gui.set_scale(self.player.gui.scale)
-            self.objects.append(blt)
-            self.n_objects +=1
-            # print((self.cursor.x - self.player.x) / 32, (self.cursor.y - self.player.y) / 32)
+        # if self.player.isFire:
+        #     # blt = Bullet(
+        #     #     x=self.player.x, 
+        #     #     y=self.player.y, 
+        #     #     # w=0.5*game.gameplay.player.gui.scale,
+        #     #     # h=0.5*game.gameplay.player.gui.scale,
+        #     #     w=0.5,
+        #     #     h=0.5,
+        #     #     screen=self.screen, 
+        #     #     screen_rect=self.screen_rect,
+        #     #     dx=(self.cursor.gui.x - self.screen_rect.width/2) / 1000,
+        #     #     dy=(self.cursor.gui.y - self.screen_rect.height/2) / 1000,
+        #     #     hp_changer=50
+        #     # )
+        #     # blt.gui.set_scale(self.player.gui.scale)
+        #     self.objects.append(blt)
+        #     self.n_objects +=1
+        #     # print((self.cursor.x - self.player.x) / 32, (self.cursor.y - self.player.y) / 32)
 
-            self.player.isFire = False
+        #     self.player.isFire = False
+
+        self.objects.append(blt)
+        self.n_objects +=1
 
     def del_object(self, o):
         del self.objects[o]
@@ -2806,6 +2845,13 @@ class GamePlay:
                         # self._del_objects_list.append(o)
                         self.objects[o].gui.hp_bar.dead_hp()
                         self._del_objects_list.append(o)
+            if self.player.isAlive:
+                if self.objects[o].collidesquare(self.player):
+                    self.player.gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
+                    # self._del_objects_list.append(o)
+                    self.objects[o].gui.hp_bar.dead_hp()
+                    self._del_objects_list.append(o)
+            
             
 
                 
@@ -3131,4 +3177,3 @@ game = Game()
 game.run()
 
 sys.exit()
-
