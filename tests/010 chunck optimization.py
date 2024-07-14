@@ -2072,7 +2072,11 @@ class Inventory:
 
     def add_items(self, items):
         self.objects += items
-    
+
+    def del_all_items(self):
+        for i, _ in enumerate(self.objects):
+            del self.objects[i]
+
     def __len__(self):
         return len(self.objects)
 
@@ -2088,6 +2092,8 @@ class Item(Square):
         self.name = f'{type} 1.1'
         
         self.isActivate = False
+        self.cooldown_max = 10
+        self.cooldown = 0
 
         self.gui = MobGUI(
             screen=screen,
@@ -2111,54 +2117,63 @@ class Item(Square):
 
     def activate_handler(self):
         # print(self.x, self.y)
+        if self.cooldown != 0:
+            self.cooldown -= 1
+
         if self.isActivate:
             self.isActivate = False
             if self.type == 'gun':
-                snd = pg.mixer.Sound(f'./sounds/guns/9mm/9mm_{np.random.randint(1,5+1)}.ogg')
-                snd.set_volume(0.3)
-                snd.play()
-                blt = Bullet(
-                    x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
-                    y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
-                    # w=0.5*game.gameplay.player.gui.scale,
-                    # h=0.5*game.gameplay.player.gui.scale,
-                    w=7/32,
-                    h=7/32,
-                    screen=game.gameplay.screen, 
-                    screen_rect=game.gameplay.screen_rect,
-                    # dx=(game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2) / 1000,
-                    # dy=(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2) / 1000,
-                    # angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
-                    angle=self.owner.mob_view_angle,
-                    blt_speed=1,
-                    hp_changer=100
-                )
-                blt.gui.set_scale(game.gameplay.player.gui.scale)
-                game.gameplay.add_object(blt)
+                if self.cooldown == 0:
+                    self.cooldown = self.cooldown_max
+                    snd = pg.mixer.Sound(f'./sounds/guns/9mm/9mm_{np.random.randint(1,5+1)}.ogg')
+                    snd.set_volume(0.3)
+                    snd.play()
+                    blt = Bullet(
+                        x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
+                        y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
+                        # w=0.5*game.gameplay.player.gui.scale,
+                        # h=0.5*game.gameplay.player.gui.scale,
+                        w=7/32,
+                        h=7/32,
+                        screen=game.gameplay.screen, 
+                        screen_rect=game.gameplay.screen_rect,
+                        # dx=(game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2) / 1000,
+                        # dy=(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2) / 1000,
+                        # angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                        angle=self.owner.mob_view_angle,
+                        blt_speed=1,
+                        hp_changer=100
+                    )
+                    blt.gui.set_scale(game.gameplay.player.gui.scale)
+                    game.gameplay.add_object(blt)
             elif self.type == 'knife':
-                snd = pg.mixer.Sound(f'./sounds/knife/knife_{np.random.randint(2,4+1)}.mp3')
-                snd.set_volume(1)
-                snd.play()
-                ka = KinfeAttack(
-                    x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
-                    y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
-                    # w=0.5*game.gameplay.player.gui.scale,
-                    # h=0.5*game.gameplay.player.gui.scale,
-                    w=0.5,
-                    h=0.5,
-                    screen=game.gameplay.screen, 
-                    screen_rect=game.gameplay.screen_rect,
-                    # angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
-                    angle=self.owner.mob_view_angle,
-                    blt_speed=0.15,
-                    hp_changer=50,
-                    texture_surf=self.gui.surf
-                )
-                ka.gui.hp_bar.set_hp_bars({'ЗОНА': 13})
-                ka.gui.set_scale(game.gameplay.player.gui.scale)
-                game.gameplay.add_object(ka)
+                if self.cooldown == 0:
+                    self.cooldown = self.cooldown_max
+                    snd = pg.mixer.Sound(f'./sounds/knife/knife_{np.random.randint(2,4+1)}.mp3')
+                    snd.set_volume(1)
+                    snd.play()
+                    ka = KinfeAttack(
+                        x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
+                        y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
+                        # w=0.5*game.gameplay.player.gui.scale,
+                        # h=0.5*game.gameplay.player.gui.scale,
+                        w=0.5,
+                        h=0.5,
+                        screen=game.gameplay.screen, 
+                        screen_rect=game.gameplay.screen_rect,
+                        # angle=np.arctan2(game.gameplay.cursor.gui.y - game.gameplay.screen_rect.height/2, game.gameplay.cursor.gui.x - game.gameplay.screen_rect.width/2),
+                        angle=self.owner.mob_view_angle,
+                        blt_speed=0.15,
+                        hp_changer=50,
+                        texture_surf=self.gui.surf
+                    )
+                    ka.gui.hp_bar.set_hp_bars({'ЗОНА': 13})
+                    ka.gui.set_scale(game.gameplay.player.gui.scale)
+                    game.gameplay.add_object(ka)
             elif self.type == 'food':
-                self.owner.gui.hp_bar.heal_hp(100)   
+                if self.cooldown == 0:
+                    self.cooldown = self.cooldown_max
+                    self.owner.gui.hp_bar.heal_hp(100)   
 
     def get_chunck_pos_yx(self):
         return int(self.y//16), int(self.x//16)
@@ -2254,8 +2269,12 @@ class Mob(Square):
         
     def move(self):
         if self.isAlive:
-            self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
-            self.set_y(self.y+np.random.choice([-self.speed, self.speed]))
+            # self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
+            # self.set_y(self.y+np.random.choice([-self.speed, self.speed]))
+
+            self.set_x(self.x+self.speed*np.cos(self.mob_view_angle)+0.1*np.random.choice([-1, 1]))
+            self.set_y(self.y+self.speed*np.sin(self.mob_view_angle)+0.1*np.random.choice([-1, 1]))
+
 
             self.gui.set_x(self.x*32*self.gui.scale)
             self.gui.set_y(self.y*32*self.gui.scale)
@@ -2276,7 +2295,7 @@ class Mob(Square):
         if self.isAlive:
             if game.gameplay.player.isAlive:
                 self.set_mob_view_angle_by_target(game.gameplay.player)
-                if self.mob_view_lenght < 10:
+                if self.mob_view_lenght < 2:
                     self.inventory[self.chosen_item].isActivate = True
             angle = self.mob_view_angle
             # print(angle, self.x, self.y)
@@ -2294,9 +2313,10 @@ class Player(Mob):
     def __init__(self, x=0, y=0, w=1, h=1,screen=None, screen_rect=None) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         
+        self.inventory.del_all_items()
         self.inventory.add_items([
             Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun', owner=self),
-            # Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self),
             Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='food', owner=self),
             
         ])
@@ -2669,7 +2689,7 @@ class GamePlay:
 
         self.mobs = []
         # self.n_mobs = 10
-        self.n_mobs = 1
+        self.n_mobs = 2
         
 
         self.item = Item(x=2, y=2, screen=screen, screen_rect=screen_rect)
