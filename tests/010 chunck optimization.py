@@ -1033,10 +1033,72 @@ class WindowInventory(Window):
     def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, objects=[], gameplay=None) -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, objects)
 
+        self.gameplay = gameplay 
+
+        self.inventory_list = []
+
+        # k = 0
+        # for i in self.gameplay.player.inventory.get_objects():
+        #     btn0 = TextureSquareGUI(
+        #         screen=self.surf,
+        #         screen_rect=self.rect, 
+        #         x=0, 
+        #         y=20 + k*25 + 2*k, 
+        #         w=25, 
+        #         h=25, 
+        #         c=BLACK
+        #     )
+        #     btn1 = Button(
+        #         screen=self.surf,
+        #         screen_rect=self.rect, 
+        #         x=0, 
+        #         y=20 + k*25 + 2*k, 
+        #         w=(self.w-20)//2, 
+        #         h=25, 
+        #         c=BLACK,
+        #         text=i.type
+        #     )
+        #     btn2 = Button(
+        #         screen=self.surf,
+        #         screen_rect=self.rect, 
+        #         x=self.w, 
+        #         y=20 + k*25 + 2*k, 
+        #         w=(self.w-20)//2, 
+        #         h=25, 
+        #         c=BLACK,
+        #         text=i.name
+        #     )
+
+        #     btn0.surf = pg.transform.scale(i.gui.surf, (25, 25))
+        #     btn0.scalable = False
+
+        #     btn0.set_left(0)
+        #     btn1.set_left(btn0.get_right())
+        #     btn2.set_left(btn1.get_right())
+            
+        #     self.inventory_list.append([
+        #         btn0,
+        #         btn1, 
+        #         btn2
+        #     ])
+
+        #     self.inventory_list[-1][0].motionable = False
+        #     self.inventory_list[-1][1].motionable = False
+        #     self.inventory_list[-1][2].motionable = False
+            
+        #     k+=1
+
+        # self.objects += self.inventory_list[0]+self.inventory_list[1]+self.inventory_list[2]
+        self.update_inventory()
+
+    def __del__(self):
+        super().__del__()
+
+    def update_inventory(self):
         self.inventory_list = []
 
         k = 0
-        for i in gameplay.player.inventory.get_objects():
+        for i in self.gameplay.player.inventory.get_objects():
             btn0 = TextureSquareGUI(
                 screen=self.surf,
                 screen_rect=self.rect, 
@@ -1086,10 +1148,7 @@ class WindowInventory(Window):
             
             k+=1
 
-        self.objects += self.inventory_list[0]+self.inventory_list[1]+self.inventory_list[2]
-
-    def __del__(self):
-        super().__del__()
+        self.objects += sum(self.inventory_list, [])
 
     def reset_screen(self, screen):
         super().reset_screen(screen)
@@ -2072,6 +2131,9 @@ class Inventory:
     def get_objects(self):
         return self.objects
 
+    def add_item(self, item):
+        self.objects += [item]
+
     def add_items(self, items):
         self.objects += items
 
@@ -2278,12 +2340,18 @@ class Mob(Square):
             # self.set_x(self.x+np.random.choice([-self.speed, self.speed]))
             # self.set_y(self.y+np.random.choice([-self.speed, self.speed]))
 
-            self.set_x(self.x+self.speed*np.cos(self.mob_view_angle)+0.1*np.random.choice([-1, 1]))
-            self.set_y(self.y+self.speed*np.sin(self.mob_view_angle)+0.1*np.random.choice([-1, 1]))
+            if self.mob_view_lenght > 1:
+                self.set_x(self.x+self.speed*np.cos(self.mob_view_angle)+0.05*np.random.choice([-1, 1]))
+                self.set_y(self.y+self.speed*np.sin(self.mob_view_angle)+0.05*np.random.choice([-1, 1]))
 
+                self.gui.set_x(self.x*32*self.gui.scale)
+                self.gui.set_y(self.y*32*self.gui.scale)
+            else:
+                self.set_x(self.x+0.1*np.random.choice([-1, 1]))
+                self.set_y(self.y+0.1*np.random.choice([-1, 1]))
 
-            self.gui.set_x(self.x*32*self.gui.scale)
-            self.gui.set_y(self.y*32*self.gui.scale)
+                self.gui.set_x(self.x*32*self.gui.scale)
+                self.gui.set_y(self.y*32*self.gui.scale)
         else:
             self.set_x(self.x)
             self.set_y(self.y)
@@ -2693,10 +2761,25 @@ class GamePlay:
         #     print('save')
         #     np.save(f, self.map.collidable)
 
-        self.item = Item(x=2, y=2, screen=screen, screen_rect=screen_rect)
+        # self.item = Item(x=2, y=2, screen=screen, screen_rect=screen_rect)
+
+        self.n_items= 5
+        self.items = []
+        for i in range(self.n_items):
+            self.items.append(
+                Item(
+                    x=2+np.random.randint(-10, 10), 
+                    y=2+np.random.randint(-10, 10), 
+                    screen=screen, 
+                    screen_rect=screen_rect, 
+                    type=np.random.choice(['food', 'weapon/gun', 'weapon/close_combat']), 
+                    id=np.random.randint(0, 10)
+                )
+            )
+        self._del_items_list = [] 
 
         self.mobs = []
-        self.n_mobs_max = 5
+        self.n_mobs_max = 10
         # self.n_mobs = 10
         self.n_mobs = 2
         for mob in range(self.n_mobs):
@@ -2726,7 +2809,9 @@ class GamePlay:
         self.screen = screen
         self.screen_rect = self.screen.get_rect()
         self.map.reset_screen(screen)
-        self.item.gui.reset_screen(screen)
+        # self.item.gui.reset_screen(screen)
+        for i in range(self.n_items):
+            self.items[i].gui.reset_screen(screen)
 
         self.kill_zone.gui.reset_screen(screen)
         self.heal_zone.gui.reset_screen(screen)
@@ -2791,6 +2876,21 @@ class GamePlay:
             self.del_mob(m)
         self._del_mobs_list = []
 
+    def add_item(self, item):
+        item.gui.set_scale(self.player.gui.scale)
+        self.mobs.append(item)
+        self.n_items +=1
+
+    def del_item(self, i):
+        del self.items[i]
+        self.n_items -= 1
+
+    def del_items(self):
+        for i in np.sort(list(set(self._del_items_list)))[::-1]:
+            self.del_item(i)
+        self._del_items_list = []
+
+
 
     def camera_center(self):
         # print('Blk', self.map.blocks[0, 0].gui.x,-self.camera.gui.x, self.screen_rect.width/2) 
@@ -2811,8 +2911,13 @@ class GamePlay:
         # vec_camera_center_y_blocks(self.map.not_nan[:, 0], self.map.not_nan[:, 1])
 
 
-        self.item.gui.set_x(self.item.gui.x - self.camera.gui.x + self.screen_rect.width/2)
-        self.item.gui.set_y(self.item.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+        # self.item.gui.set_x(self.item.gui.x - self.camera.gui.x + self.screen_rect.width/2)
+        # self.item.gui.set_y(self.item.gui.y - self.camera.gui.y + self.screen_rect.height/2)
+
+        for i in range(self.n_items):
+            self.items[i].gui.set_x(self.items[i].gui.x - self.camera.gui.x + self.screen_rect.width/2)
+            self.items[i].gui.set_y(self.items[i].gui.y - self.camera.gui.y + self.screen_rect.height/2)
+     
 
         for mob in range(self.n_mobs):
             self.mobs[mob].gui.set_x(self.mobs[mob].gui.x - self.camera.gui.x + self.screen_rect.width/2)
@@ -2900,7 +3005,21 @@ class GamePlay:
                     self._del_objects_list.append(o)
             
             
+        for i in range(self.n_items):
+            dx = self.items[i].x - self.player.x
+            dy = self.items[i].y - self.player.y
 
+            l = np.sqrt(dx**2 + dy**2)
+
+            if l<1.1:
+                self.player.inventory.add_item(
+                    self.items[i]
+                )
+                self.player.inventory[-1].owner = self.player
+                game.window_inventory.update_inventory()
+                self._del_items_list.append(i)
+
+            
                 
         if self.kill_zone.collidesquare(self.player):
             self.player.gui.hp_bar.hit_hp(self.kill_zone.hp_changer)
@@ -3030,7 +3149,9 @@ class GamePlay:
     def event_handler(self, event):
         
         self.map.event_handler(event)
-        self.item.event_handler(event)
+        # self.item.event_handler(event)
+        for i in range(self.n_items):
+            self.items[i].event_handler(event)
         for mob in range(self.n_mobs):
             self.mobs[mob].event_handler(event)
 
@@ -3049,7 +3170,9 @@ class GamePlay:
         self.map.render()
         self.camera.render()
 
-        self.item.render()
+        # self.item.render()
+        for i in range(self.n_items):
+            self.items[i].render()
         for mob in range(self.n_mobs):
             self.mobs[mob].render()
 
@@ -3067,6 +3190,7 @@ class GamePlay:
         # self.add_object(blt)
         self.collide()
         # print(self.n_objects, self._del_objects_list)
+        self.del_items()
         self.del_mobs()
         if self.n_mobs < self.n_mobs_max:
             self.add_mob(Mob(x=self.player.x+np.random.choice([1, -1])*np.random.randint(5, 10), y=self.player.y+np.random.choice([1, -1])*np.random.randint(5, 10), screen=self.screen, screen_rect=self.screen_rect, type='mob', id=np.random.randint(0, 1073)))
