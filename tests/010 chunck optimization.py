@@ -331,7 +331,7 @@ class SquarePhysicalGUI(SquareGUI):
         self.zoom()
 
 class BlockGUI(SquarePhysicalGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=BLUE, alpha=255, bc=WHITE, texture_file='./tiles/grass.png') -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=BLUE, alpha=255, bc=WHITE, texture_file=f'./tiles/blocks/center/{2:08d}.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
 
         self.texture_file = texture_file
@@ -551,7 +551,7 @@ class HPBars(SquarePhysicalGUI):
         self.zoom()
         
 class TextureSquareGUI(SquarePhysicalGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file=f'./tiles/mob/{1000:08d}.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc)
         self.texture_file = texture_file
 
@@ -585,8 +585,10 @@ class TextureSquareGUI(SquarePhysicalGUI):
         self.set_rect(self.surf)
     
 class MobGUI(TextureSquareGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
-        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, texture_file=texture_file)
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file=f'./tiles/mob/{978:08d}.png', type='mob', id=978) -> None:
+        self.type= type
+        self.id=id
+        super().__init__(screen=screen, screen_rect=screen_rect, x=x, y=y, w=w, h=h, c=c, alpha=alpha, bc=bc, texture_file=f'./tiles/{type}/{id:08d}.png')
 
         self.render_hp_bar = True
         self.hp_bar = HPBars(
@@ -665,7 +667,7 @@ class MobGUI(TextureSquareGUI):
         self.zoom()
 
 class KillZoneGUI(MobGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file='./tiles/zombie.png') -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=32, h=32, c=GRAY_GREEN, alpha=255, bc=WHITE, texture_file=f'./tiles/mob/{1000:08d}.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, texture_file)
         self.hp_bar = HPBars(
             screen, 
@@ -679,7 +681,7 @@ class KillZoneGUI(MobGUI):
         )
 
 class CursorGUI(TextureSquareGUI):
-    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/cursor.png') -> None:
+    def __init__(self, screen, screen_rect, x=0, y=0, w=200, h=100, c=GRAY, alpha=255, bc=WHITE, texture_file='./tiles/gameplay/cursor.png') -> None:
         super().__init__(screen, screen_rect, x, y, w, h, c, alpha, bc, texture_file=texture_file)
 
     def __del__(self):
@@ -1705,26 +1707,26 @@ class ProceduralGeneration:
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
-        ])
+        ])*2
 
         self.block_bottom_1 = np.array([
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, ],
-        ])
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ],
+        ])*24
 
         self.block_center_0 = np.array([
             [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
@@ -1743,7 +1745,7 @@ class ProceduralGeneration:
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
             [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ],
-        ])
+        ])*29
 
         self.block_center_1 = np.array([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
@@ -1762,25 +1764,25 @@ class ProceduralGeneration:
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
-        ])
+        ])*29
 
         self.block_bottom_road = np.array([
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
-            [10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 10, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
+            [28, 28, 28, 28, 28, 28, 28, 70, 70, 28, 28, 28, 28, 28, 28, 28, ],
         ])
 
 
@@ -2081,7 +2083,7 @@ class Inventory:
         return len(self.objects)
 
 class Item(Square):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='gun', owner=None) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='weapon/gun', id=0, owner=None) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         self.owner = owner
         self.collidable = True 
@@ -2089,7 +2091,8 @@ class Item(Square):
         self.speed = self.time * 0.0
 
         self.type = type
-        self.name = f'{type} 1.1'
+        self.id = id
+        self.name = f'1.1'
         
         self.isActivate = False
         self.cooldown_max = 10
@@ -2106,7 +2109,7 @@ class Item(Square):
         )
         self.gui.render_hp_bar = False
 
-        self.gui.reset_texture(f'./tiles/{type}.png')
+        self.gui.reset_texture(f'./tiles/{self.type}/{self.id:08d}.png')
 
         self.gui.render_color = False
         self.gui.render_bc = False
@@ -2122,15 +2125,15 @@ class Item(Square):
 
         if self.isActivate:
             self.isActivate = False
-            if self.type == 'gun':
+            if self.type == 'weapon/gun':
                 if self.cooldown == 0:
                     self.cooldown = self.cooldown_max
                     snd = pg.mixer.Sound(f'./sounds/guns/9mm/9mm_{np.random.randint(1,5+1)}.ogg')
                     snd.set_volume(0.3)
                     snd.play()
                     blt = Bullet(
-                        x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
-                        y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
+                        x=self.owner.x+1.15*np.cos(self.owner.mob_view_angle), 
+                        y=self.owner.y+1.15*np.sin(self.owner.mob_view_angle), 
                         # w=0.5*game.gameplay.player.gui.scale,
                         # h=0.5*game.gameplay.player.gui.scale,
                         w=7/32,
@@ -2146,15 +2149,15 @@ class Item(Square):
                     )
                     blt.gui.set_scale(game.gameplay.player.gui.scale)
                     game.gameplay.add_object(blt)
-            elif self.type == 'knife':
+            elif self.type == 'weapon/close_combat':
                 if self.cooldown == 0:
                     self.cooldown = self.cooldown_max
                     snd = pg.mixer.Sound(f'./sounds/knife/knife_{np.random.randint(2,4+1)}.mp3')
                     snd.set_volume(1)
                     snd.play()
                     ka = KinfeAttack(
-                        x=self.owner.x+1.5*np.cos(self.owner.mob_view_angle), 
-                        y=self.owner.y+1.5*np.sin(self.owner.mob_view_angle), 
+                        x=self.owner.x+1.15*np.cos(self.owner.mob_view_angle), 
+                        y=self.owner.y+1.15*np.sin(self.owner.mob_view_angle), 
                         # w=0.5*game.gameplay.player.gui.scale,
                         # h=0.5*game.gameplay.player.gui.scale,
                         w=0.5,
@@ -2194,7 +2197,7 @@ class Item(Square):
         self.activate_handler()
 
 class Mob(Square):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='mob', id=978) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         self.collidable = True 
         self.time = 1
@@ -2211,7 +2214,9 @@ class Mob(Square):
             y=self.y*32,
             w=self.w*32,
             h=self.h*32,
-            c=GREEN
+            c=GREEN,
+            type=type,
+            id=id
         )
 
         self.gui.render_color = False
@@ -2221,7 +2226,7 @@ class Mob(Square):
         self.mob_view_lenght = 0
 
         self.inventory.add_items([
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self)
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='weapon/close_combat', id=np.random.randint(0, 45), owner=self)
         ])
         self.chosen_item = 0 % len(self.inventory)
 
@@ -2315,14 +2320,14 @@ class Player(Mob):
         
         self.inventory.del_all_items()
         self.inventory.add_items([
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='gun', owner=self),
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='knife', owner=self),
-            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='food', owner=self),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='weapon/gun',             id=np.random.randint(0, 179), owner=self),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='weapon/close_combat',    id=np.random.randint(0, 45), owner=self),
+            Item(x=x+0.5, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect, type='food',                   id=np.random.randint(0, 107), owner=self),
             
         ])
         self.chosen_item = 0 % len(self.inventory)
 
-        self.gui.reset_texture('./tiles/player.png')
+        self.gui.reset_texture(f'./tiles/human/{1:08d}.png')
         # self.gui.reset_color(BLUE)
 
         self.speed = self.time*0.1
@@ -2537,7 +2542,7 @@ class Bullet(KillZone):
         self.gui.hp_bar.set_hp_bars({'ЗОНА': 60*5})
         
 
-        self.gui.reset_texture('./tiles/bullet.png')
+        self.gui.reset_texture('./tiles/gameplay/bullet.png')
         self.gui.set_wh(32, 32)
         self.gui.set_x(self.gui.get_xy()[0])
         self.gui.set_y(self.gui.get_xy()[1])
@@ -2696,7 +2701,7 @@ class GamePlay:
 
         for mob in range(self.n_mobs):
             self.mobs.append(
-                Mob(x=10, y=8, screen=screen, screen_rect=screen_rect)
+                Mob(x=10, y=8, screen=screen, screen_rect=screen_rect, type='mob', id=np.random.randint(0, 1073))
             )
 
 
