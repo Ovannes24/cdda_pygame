@@ -2083,7 +2083,7 @@ class Inventory:
         return len(self.objects)
 
 class Item(Square):
-    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='weapon/gun', id=0, owner=None) -> None:
+    def __init__(self, x=0, y=0, w=1, h=1, screen=None, screen_rect=None, type='weapon/gun', id=0, owner=Square()) -> None:
         super().__init__(x=x, y=y, w=w, h=h, screen=screen, screen_rect=screen_rect)
         self.owner = owner
         self.collidable = True 
@@ -2108,6 +2108,7 @@ class Item(Square):
             c=GREEN
         )
         self.gui.render_hp_bar = False
+        self.gui.set_scale(self.owner.gui.scale)
 
         self.gui.reset_texture(f'./tiles/{self.type}/{self.id:08d}.png')
 
@@ -2692,18 +2693,17 @@ class GamePlay:
         #     print('save')
         #     np.save(f, self.map.collidable)
 
-        self.mobs = []
-        # self.n_mobs = 10
-        self.n_mobs = 2
-        
-
         self.item = Item(x=2, y=2, screen=screen, screen_rect=screen_rect)
 
+        self.mobs = []
+        self.n_mobs_max = 5
+        # self.n_mobs = 10
+        self.n_mobs = 2
         for mob in range(self.n_mobs):
             self.mobs.append(
                 Mob(x=10, y=8, screen=screen, screen_rect=screen_rect, type='mob', id=np.random.randint(0, 1073))
             )
-
+        self._del_mobs_list = []
 
         self.kill_zone = KillZone(x=8, y=8, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
         self.heal_zone = HealZone(x=8, y=10, w=0.5, h=0.5, screen=screen, screen_rect=screen_rect)
@@ -2776,6 +2776,21 @@ class GamePlay:
         for o in np.sort(list(set(self._del_objects_list)))[::-1]:
             self.del_object(o)
         self._del_objects_list = []
+
+    def add_mob(self, mob):
+        mob.gui.set_scale(self.player.gui.scale)
+        self.mobs.append(mob)
+        self.n_mobs +=1
+
+    def del_mob(self, m):
+        del self.mobs[m]
+        self.n_mobs -= 1
+
+    def del_mobs(self):
+        for m in np.sort(list(set(self._del_mobs_list)))[::-1]:
+            self.del_mob(m)
+        self._del_mobs_list = []
+
 
     def camera_center(self):
         # print('Blk', self.map.blocks[0, 0].gui.x,-self.camera.gui.x, self.screen_rect.width/2) 
@@ -2875,6 +2890,8 @@ class GamePlay:
                         # self._del_objects_list.append(o)
                         self.objects[o].gui.hp_bar.dead_hp()
                         self._del_objects_list.append(o)
+                else:
+                    self._del_mobs_list.append(mob)
             if self.player.isAlive:
                 if self.objects[o].collidesquare(self.player):
                     self.player.gui.hp_bar.hit_hp(self.objects[o].hp_changer)    
@@ -3050,7 +3067,12 @@ class GamePlay:
         # self.add_object(blt)
         self.collide()
         # print(self.n_objects, self._del_objects_list)
+        self.del_mobs()
+        if self.n_mobs < self.n_mobs_max:
+            self.add_mob(Mob(x=self.player.x+np.random.choice([1, -1])*np.random.randint(5, 10), y=self.player.y+np.random.choice([1, -1])*np.random.randint(5, 10), screen=self.screen, screen_rect=self.screen_rect, type='mob', id=np.random.randint(0, 1073)))
+
         self.del_objects()
+
         self.camera.follow(self.player)
 
 
