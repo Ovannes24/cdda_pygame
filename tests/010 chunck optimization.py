@@ -1096,7 +1096,6 @@ class WindowInventory(Window):
 
     def update_inventory(self):
         self.inventory_list = []
-
         k = 0
         for i in self.gameplay.player.inventory.get_objects():
             btn0 = TextureSquareGUI(
@@ -1148,7 +1147,8 @@ class WindowInventory(Window):
             
             k+=1
 
-        self.objects += sum(self.inventory_list, [])
+        self.objects = sum(self.inventory_list, [])
+        
 
     def reset_screen(self, screen):
         super().reset_screen(screen)
@@ -1159,6 +1159,7 @@ class WindowInventory(Window):
 
     def event_handler(self, event):
         super().event_handler(event)
+        
         for o in self.objects:
             o.event_handler(event)
             
@@ -2128,6 +2129,9 @@ class Inventory:
     def __getitem__(self, i):
         return self.objects[i]
     
+    def get_len(self):
+        return len(self.objects)
+
     def get_objects(self):
         return self.objects
 
@@ -2136,6 +2140,9 @@ class Inventory:
 
     def add_items(self, items):
         self.objects += items
+
+    def del_item(self, i):
+        del self.objects[i]
 
     def del_all_items(self):
         for i, _ in enumerate(self.objects):
@@ -2459,9 +2466,10 @@ class Player(Mob):
 
     def event_handler(self, event):
         self.gui.event_handler(event)
-        for i in range(len(self.inventory.get_objects())):
-            self.inventory[i].gui.event_handler(event)
-        # self.inventory[self.chosen_item].event_handler(event)
+        if self.inventory.get_len() != 0:
+            for i in range(len(self.inventory.get_objects())):
+                self.inventory[i].gui.event_handler(event)
+            # self.inventory[self.chosen_item].event_handler(event)
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_w and not self.down_pressed:
                 self.up_pressed = True
@@ -2481,6 +2489,13 @@ class Player(Mob):
                 if not self.right_pose:
                     self.right_pose = True
                     self.gui.reflect_texture()
+            if event.key == pg.K_f:
+                self.inventory[self.chosen_item].set_center(self.x+2*np.cos(self.mob_view_angle), self.y+2*np.sin(self.mob_view_angle))
+                game.gameplay.add_item(self.inventory[self.chosen_item])
+                self.inventory.del_item(self.chosen_item)
+                game.window_inventory.update_inventory()
+                if self.chosen_item >= len(self.inventory):
+                    self.chosen_item = len(self.inventory)-1
         if event.type == pg.KEYUP:
             if self.up_pressed and event.key == pg.K_w:
                 self.y_rel = 0
@@ -2495,17 +2510,20 @@ class Player(Mob):
                 self.x_rel = 0
                 self.right_pressed = False
         if event.type == pg.MOUSEWHEEL:
-            if event.y <= 0:
-                self.chosen_item = (self.chosen_item + 1) % len(self.inventory)
-            else:
-                self.chosen_item = (self.chosen_item - 1) % len(self.inventory)
+            if self.inventory.get_len() != 0:
+                if event.y <= 0:
+                    self.chosen_item = (self.chosen_item + 1) % len(self.inventory)
+                else:
+                    self.chosen_item = (self.chosen_item - 1) % len(self.inventory)
 
         if event.type == pg.MOUSEBUTTONDOWN:
             self.isFire = True
-            self.inventory[self.chosen_item].isActivate = True
+            if self.inventory.get_len() != 0:
+                self.inventory[self.chosen_item].isActivate = True
         if event.type == pg.MOUSEBUTTONUP:
             self.isFire = False
-            self.inventory[self.chosen_item].isActivate = False
+            if self.inventory.get_len() != 0:
+                self.inventory[self.chosen_item].isActivate = False
     
     def render(self):
         # print(self.get_center(), self.gui.scale)
@@ -2519,10 +2537,12 @@ class Player(Mob):
             # print(angle, self.x, self.y)
             dx = np.cos(angle)
             dy = np.sin(angle)
-            self.inventory[self.chosen_item].gui.rotate_texture_only_surf(-angle*180/np.pi - 45)
-            self.inventory[self.chosen_item].gui.set_center(self.gui.x+(dx)*0.75*32*self.gui.scale, self.gui.y+(dy)*0.75*32*self.gui.scale)
             
-            self.inventory[self.chosen_item].render()
+            if self.inventory.get_len() != 0:
+                self.inventory[self.chosen_item].gui.rotate_texture_only_surf(-angle*180/np.pi - 45)
+                self.inventory[self.chosen_item].gui.set_center(self.gui.x+(dx)*0.75*32*self.gui.scale, self.gui.y+(dy)*0.75*32*self.gui.scale)
+                
+                self.inventory[self.chosen_item].render()
         self.move()
         # print(self.inventory[self.chosen_item].gui.get_center())
         self.dead_handler()
@@ -2773,13 +2793,13 @@ class GamePlay:
                     screen=screen, 
                     screen_rect=screen_rect, 
                     type=np.random.choice(['food', 'weapon/gun', 'weapon/close_combat']), 
-                    id=np.random.randint(0, 10)
+                    id=np.random.randint(0, 40)
                 )
             )
         self._del_items_list = [] 
 
         self.mobs = []
-        self.n_mobs_max = 10
+        self.n_mobs_max = 2
         # self.n_mobs = 10
         self.n_mobs = 2
         for mob in range(self.n_mobs):
@@ -2878,7 +2898,7 @@ class GamePlay:
 
     def add_item(self, item):
         item.gui.set_scale(self.player.gui.scale)
-        self.mobs.append(item)
+        self.items.append(item)
         self.n_items +=1
 
     def del_item(self, i):
